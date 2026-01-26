@@ -1,0 +1,6 @@
+{
+  "rotationInterval": 30000,
+  "tickerRefreshInterval": 300000,
+  "maxTickerItems": 50,
+  "tickerEnabled": false
+}

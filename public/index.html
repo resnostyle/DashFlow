@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Ticker Display</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="content-area" id="contentArea">
+            <div class="content-placeholder">
+                <h1>News Ticker Display</h1>
+                <p>Add content via the API to display here</p>
+            </div>
+        </div>
+        <div class="ticker-container">
+            <div class="ticker" id="ticker">
+                <div class="ticker-content" id="tickerContent">
+                    <span class="ticker-item">Loading news...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
