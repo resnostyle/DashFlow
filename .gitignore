@@ -1,0 +1,11 @@
+node_modules/
+npm-debug.log
+.env
+.DS_Store
+*.log
+.vscode/
+.idea/
+data/*.json
+!data/.gitkeep
+# Keep package-lock.json for reproducible builds
+!package-lock.json

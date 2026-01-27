@@ -1,0 +1,67 @@
+# News Ticker Display Application - Mise Configuration
+
+[tools]
+node = "20"
+
+[tasks]
+# =============================================================================
+# INSTALLATION TASKS
+# =============================================================================
+
+# Install dependencies
+install = { run = "npm install", description = "Install npm dependencies and generate package-lock.json" }
+
+# Install production dependencies only
+install-prod = { run = "npm install --production", description = "Install production dependencies only" }
+
+# =============================================================================
+# DEVELOPMENT TASKS
+# =============================================================================
+
+# Start development server
+dev = { run = "npm run dev", description = "Start development server" }
+
+# Start production server
+start = { run = "npm start", description = "Start production server" }
+
+# =============================================================================
+# DOCKER TASKS
+# =============================================================================
+
+# Build Docker image
+docker-build = { run = "docker build -t news-ticker-display .", description = "Build Docker image" }
+
+# Run Docker container
+docker-run = { run = "docker run -d -p 3000:3000 -v $(pwd)/data:/app/data --name news-ticker news-ticker-display", description = "Run Docker container" }
+
+# Start with Docker Compose
+docker-up = { run = "docker-compose up -d", description = "Start application with Docker Compose" }
+
+# Stop Docker Compose
+docker-down = { run = "docker-compose down", description = "Stop Docker Compose services" }
+
+# View Docker Compose logs
+docker-logs = { run = "docker-compose logs -f", description = "Follow Docker Compose logs" }
+
+# Build and start with Docker Compose
+docker-build-up = { run = "docker-compose build && docker-compose up -d", description = "Build and start with Docker Compose" }
+
+# =============================================================================
+# SETUP TASKS
+# =============================================================================
+
+# Full setup: install dependencies and generate lock file
+setup = { run = "mise run install", description = "Install dependencies and generate package-lock.json" }
+
+# =============================================================================
+# UTILITY TASKS
+# =============================================================================
+
+# Show application URLs
+urls = { run = "echo 'Application URL: http://localhost:3000' && echo 'Health Check: http://localhost:3000/health' && echo 'API Base: http://localhost:3000/api'", description = "Show application URLs" }
+
+# Check Node version
+node-version = { run = "node --version", description = "Show Node.js version" }
+
+# Check npm version
+npm-version = { run = "npm --version", description = "Show npm version" }
