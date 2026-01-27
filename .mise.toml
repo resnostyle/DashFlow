@@ -1,7 +1,7 @@
 # News Ticker Display Application - Mise Configuration
 
 [tools]
-node = "20"
+node = "24"
 
 [tasks]
 # =============================================================================
