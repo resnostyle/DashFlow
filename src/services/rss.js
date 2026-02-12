@@ -8,6 +8,7 @@ let refreshInterval = null;
 
 // In-memory ticker items keyed by dashboard ID (transient, not persisted)
 const tickerItems = {};
+const lastFetchTime = {};
 
 function init(socketIo) {
   io = socketIo;
@@ -19,6 +20,11 @@ function getTickerItems(dashboardId) {
 
 function clearTickerItems(dashboardId) {
   delete tickerItems[dashboardId];
+  delete lastFetchTime[dashboardId];
+}
+
+function emitToDashboard(dashboardId, event, data) {
+  if (io) io.to(`dashboard:${dashboardId}`).emit(event, data);
 }
 
 async function fetchFeeds(dashboardId) {
@@ -27,27 +33,24 @@ async function fetchFeeds(dashboardId) {
 
   if (!config.tickerEnabled) {
     tickerItems[dashboardId] = [];
-    if (io) io.emit(`ticker:update:${dashboardId}`, []);
+    emitToDashboard(dashboardId, `ticker:update:${dashboardId}`, []);
     return [];
   }
 
   const allItems = [];
-
-  for (const feed of feeds) {
+  const feedPromises = feeds.map(async feed => {
     try {
       const feedData = await parser.parseURL(feed.url);
-      if (feedData.items) {
-        for (const item of feedData.items) {
-          allItems.push({
-            id: `${feed.id}-${item.guid || item.link || Date.now()}`,
-            title: item.title || 'No title',
-            link: item.link || '',
-            pubDate: item.pubDate || new Date().toISOString(),
-            feedName: feed.name || feed.url,
-            feedId: feed.id,
-            feedLogo: feed.logo || null,
-          });
-        }
+      if (feedData?.items) {
+        return feedData.items.map(item => ({
+          id: `${feed.id}-${item.guid || item.link || Date.now()}`,
+          title: item.title || 'No title',
+          link: item.link || '',
+          pubDate: item.pubDate || new Date().toISOString(),
+          feedName: feed.name || feed.url,
+          feedId: feed.id,
+          feedLogo: feed.logo || null,
+        }));
       }
     } catch (error) {
       console.error(
@@ -55,26 +58,45 @@ async function fetchFeeds(dashboardId) {
         error.message,
       );
     }
+    return [];
+  });
+
+  const results = await Promise.allSettled(feedPromises);
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      allItems.push(...result.value);
+    }
   }
 
   allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
   tickerItems[dashboardId] = allItems.slice(0, config.maxTickerItems);
+  lastFetchTime[dashboardId] = Date.now();
 
-  if (io) io.emit(`ticker:update:${dashboardId}`, tickerItems[dashboardId]);
+  emitToDashboard(dashboardId, `ticker:update:${dashboardId}`, tickerItems[dashboardId]);
 
   return tickerItems[dashboardId];
 }
 
 async function fetchAllFeeds() {
   const dashboardIds = db.getTickerEnabledDashboards();
+  const now = Date.now();
+
+  const toFetch = [];
   for (const id of dashboardIds) {
-    await fetchFeeds(id);
+    const config = db.getConfig(id);
+    const lastFetch = lastFetchTime[id] ?? 0;
+    if (now - lastFetch >= config.tickerRefreshInterval) {
+      toFetch.push(id);
+    }
   }
+
+  await Promise.all(toFetch.map(id => fetchFeeds(id)));
 }
 
-function startRefreshLoop(intervalMs = 300000) {
+function startRefreshLoop() {
   if (refreshInterval) clearInterval(refreshInterval);
+  const intervalMs = Math.max(60000, db.getMinTickerRefreshInterval());
   refreshInterval = setInterval(() => fetchAllFeeds(), intervalMs);
 }
 
@@ -85,6 +107,11 @@ function stopRefreshLoop() {
   }
 }
 
+function restartRefreshLoop() {
+  stopRefreshLoop();
+  startRefreshLoop();
+}
+
 module.exports = {
   init,
   getTickerItems,
@@ -93,4 +120,5 @@ module.exports = {
   fetchAllFeeds,
   startRefreshLoop,
   stopRefreshLoop,
+  restartRefreshLoop,
 };

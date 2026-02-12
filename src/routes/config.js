@@ -1,12 +1,9 @@
 const express = require('express');
 const db = require('../db');
 const rss = require('../services/rss');
+const { getDashboardId } = require('../middleware');
 
 const router = express.Router();
-
-function getDashboardId(req) {
-  return req.query.dashboard || 'default';
-}
 
 router.get('/', (req, res) => {
   res.json(db.getConfig(getDashboardId(req)));
@@ -76,16 +73,24 @@ router.post('/', async (req, res) => {
   if (validated.tickerEnabled !== undefined) {
     if (!config.tickerEnabled) {
       rss.clearTickerItems(dashboardId);
-      io.emit(`ticker:update:${dashboardId}`, []);
+      io.to(`dashboard:${dashboardId}`).emit(`ticker:update:${dashboardId}`, []);
     } else {
       const feeds = db.getFeeds(dashboardId);
       if (feeds.length > 0) {
-        await rss.fetchFeeds(dashboardId);
+        try {
+          await rss.fetchFeeds(dashboardId);
+        } catch (err) {
+          console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
+        }
       }
     }
   }
 
-  io.emit(`config:update:${dashboardId}`, config);
+  if (validated.tickerRefreshInterval !== undefined) {
+    rss.restartRefreshLoop();
+  }
+
+  io.to(`dashboard:${dashboardId}`).emit(`config:update:${dashboardId}`, config);
 
   res.json(config);
 });

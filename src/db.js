@@ -461,6 +461,18 @@ function getTickerEnabledDashboards() {
     .map(r => r.id);
 }
 
+function getMinTickerRefreshInterval() {
+  const row = db
+    .prepare(
+      `SELECT MIN(c.ticker_refresh_interval) as min_interval
+       FROM config c
+       JOIN feeds f ON c.dashboard_id = f.dashboard_id
+       WHERE c.ticker_enabled = 1`,
+    )
+    .get();
+  return row?.min_interval ?? 300000;
+}
+
 function close() {
   db.close();
 }
@@ -484,4 +496,5 @@ module.exports = {
   getConfig,
   updateConfig,
   getTickerEnabledDashboards,
+  getMinTickerRefreshInterval,
 };

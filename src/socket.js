@@ -8,6 +8,8 @@ function setup(io) {
     socket.on('dashboard:request', dashboardId => {
       const id = dashboardId || 'default';
 
+      socket.join(`dashboard:${id}`);
+
       try {
         const config = db.getConfig(id);
 

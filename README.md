@@ -16,8 +16,8 @@ A containerized Node.js application featuring a real-time RSS news ticker and dy
 
 - **Backend**: Express.js REST API + Socket.io WebSocket server
 - **Frontend**: Single-page application with vanilla JavaScript
-- **Data Storage**: JSON file-based persistence
-- **RSS Parsing**: Automatic fetching and merging of multiple RSS feeds
+- **Data Storage**: SQLite database
+- **RSS Parsing**: Automatic fetching and merging of multiple RSS feeds (parallel fetch, per-dashboard refresh intervals)
 
 ## Quick Start
 
@@ -448,16 +448,13 @@ The application automatically detects and converts these YouTube URL formats:
 
 ## Data Persistence
 
-Data is stored in JSON files in the `data/` directory:
+Data is stored in SQLite in the `data/` directory:
 
-- `data/dashboards.json` - Dashboard metadata (list of all dashboards)
-- `data/dashboards/{dashboard-id}/feeds.json` - RSS feed configurations per dashboard
-- `data/dashboards/{dashboard-id}/content.json` - Content items queue per dashboard
-- `data/dashboards/{dashboard-id}/config.json` - Display settings per dashboard
+- `data/news-ticker.db` - SQLite database containing dashboards, feeds, content, and config
 
-**Migration Note**: On first run after upgrading, existing data in `data/feeds.json`, `data/content.json`, and `data/config.json` will be automatically migrated to `data/dashboards/default/`. The old files remain for reference but are no longer used.
+**Migration Note**: On first run after upgrading, existing data in JSON files (`data/dashboards.json`, `data/dashboards/{id}/feeds.json`, `data/content.json`, `data/config.json`, or legacy flat files) will be automatically migrated to SQLite. The old JSON files remain for reference but are no longer used.
 
-These files are automatically created and managed by the application. For Docker deployments, mount this directory as a volume to persist data across container restarts.
+For Docker deployments, mount the `data/` directory as a volume to persist the database across container restarts.
 
 ## Development
 
@@ -467,23 +464,21 @@ These files are automatically created and managed by the application. For Docker
 news-ticker/
 ├── server.js              # Express + WebSocket server
 ├── package.json           # Dependencies
-├── Dockerfile            # Container definition
-├── docker-compose.yml    # Docker Compose config
-├── .dockerignore         # Build exclusions
-├── .gitignore            # Git exclusions
-├── README.md             # This file
-├── data/                 # Data persistence
-│   ├── dashboards.json   # Dashboard metadata
-│   └── dashboards/       # Per-dashboard data
-│       ├── default/
-│       │   ├── feeds.json
-│       │   ├── content.json
-│       │   └── config.json
-│       └── {dashboard-id}/
-│           ├── feeds.json
-│           ├── content.json
-│           └── config.json
-└── public/               # Frontend files
+├── Dockerfile             # Container definition
+├── docker-compose.yml     # Docker Compose config
+├── .dockerignore          # Build exclusions
+├── .gitignore             # Git exclusions
+├── README.md              # This file
+├── data/                  # Data persistence
+│   └── news-ticker.db     # SQLite database
+├── src/                   # Backend source
+│   ├── app.js             # Express app
+│   ├── db.js              # SQLite database layer
+│   ├── socket.js          # WebSocket handlers
+│   ├── middleware.js     # Shared middleware
+│   ├── routes/            # API route handlers
+│   └── services/          # Business logic (e.g. RSS)
+└── public/                # Frontend files
     ├── index.html
     ├── css/
     │   └── style.css

@@ -1,11 +1,8 @@
 const express = require('express');
 const db = require('../db');
+const { getDashboardId } = require('../middleware');
 
 const router = express.Router();
-
-function getDashboardId(req) {
-  return req.query.dashboard || 'default';
-}
 
 router.get('/', (req, res) => {
   res.json(db.getContent(getDashboardId(req)));
@@ -31,7 +28,7 @@ router.post('/', (req, res) => {
   const item = db.createContent(dashboardId, { url, title, type });
 
   const io = req.app.get('io');
-  io.emit(`content:update:${dashboardId}`, db.getContent(dashboardId));
+  io.to(`dashboard:${dashboardId}`).emit(`content:update:${dashboardId}`, db.getContent(dashboardId));
 
   res.status(201).json(item);
 });
@@ -54,7 +51,7 @@ router.put('/:id', (req, res) => {
   }
 
   const io = req.app.get('io');
-  io.emit(`content:update:${dashboardId}`, db.getContent(dashboardId));
+  io.to(`dashboard:${dashboardId}`).emit(`content:update:${dashboardId}`, db.getContent(dashboardId));
 
   res.json(item);
 });
@@ -67,7 +64,7 @@ router.delete('/:id', (req, res) => {
   }
 
   const io = req.app.get('io');
-  io.emit(`content:update:${dashboardId}`, db.getContent(dashboardId));
+  io.to(`dashboard:${dashboardId}`).emit(`content:update:${dashboardId}`, db.getContent(dashboardId));
 
   res.json({ message: 'Content deleted' });
 });

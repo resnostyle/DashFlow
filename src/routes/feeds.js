@@ -1,12 +1,9 @@
 const express = require('express');
 const db = require('../db');
 const rss = require('../services/rss');
+const { getDashboardId } = require('../middleware');
 
 const router = express.Router();
-
-function getDashboardId(req) {
-  return req.query.dashboard || 'default';
-}
 
 router.get('/', (req, res) => {
   res.json(db.getFeeds(getDashboardId(req)));
@@ -38,8 +35,7 @@ router.post('/', async (req, res) => {
 
   const feed = db.createFeed(dashboardId, { name, url, logo });
 
-  const config = db.getConfig(dashboardId);
-  if (config.tickerEnabled) {
+  if (db.getConfig(dashboardId).tickerEnabled) {
     try {
       await rss.fetchFeeds(dashboardId);
     } catch (err) {
@@ -74,9 +70,12 @@ router.put('/:id', async (req, res) => {
     return res.status(404).json({ error: 'Feed not found' });
   }
 
-  const config = db.getConfig(dashboardId);
-  if (config.tickerEnabled) {
-    await rss.fetchFeeds(dashboardId);
+  if (db.getConfig(dashboardId).tickerEnabled) {
+    try {
+      await rss.fetchFeeds(dashboardId);
+    } catch (err) {
+      console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
+    }
   }
 
   res.json(feed);
@@ -89,9 +88,12 @@ router.delete('/:id', async (req, res) => {
     return res.status(404).json({ error: 'Feed not found' });
   }
 
-  const config = db.getConfig(dashboardId);
-  if (config.tickerEnabled) {
-    await rss.fetchFeeds(dashboardId);
+  if (db.getConfig(dashboardId).tickerEnabled) {
+    try {
+      await rss.fetchFeeds(dashboardId);
+    } catch (err) {
+      console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
+    }
   }
 
   res.json({ message: 'Feed deleted' });
