@@ -6,6 +6,9 @@ npm-debug.log
 .vscode/
 .idea/
 data/*.json
+data/*.db
+data/*.db-wal
+data/*.db-shm
 !data/.gitkeep
 # Keep package-lock.json for reproducible builds
 !package-lock.json
