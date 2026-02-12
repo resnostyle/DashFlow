@@ -40,7 +40,11 @@ router.post('/', async (req, res) => {
 
   const config = db.getConfig(dashboardId);
   if (config.tickerEnabled) {
-    await rss.fetchFeeds(dashboardId);
+    try {
+      await rss.fetchFeeds(dashboardId);
+    } catch (err) {
+      console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
+    }
   }
 
   res.status(201).json(feed);
