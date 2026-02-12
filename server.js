@@ -26,7 +26,9 @@ rss.init(io);
 socket.setup(io);
 
 // Initial RSS fetch then start periodic refresh
-rss.fetchAllFeeds().then(() => {
+rss.fetchAllFeeds().catch(err => {
+  console.error('Error during initial RSS fetch:', err);
+}).finally(() => {
   rss.startRefreshLoop();
 });
 

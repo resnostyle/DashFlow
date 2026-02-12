@@ -307,8 +307,8 @@ function updateFeed(id, dashboardId, { name, url, logo }) {
   );
   if (!row) return null;
 
-  const newName = name || row.name;
-  const newUrl = url || row.url;
+  const newName = name !== undefined ? name : row.name;
+  const newUrl = url !== undefined ? url : row.url;
   const newLogo = logo !== undefined ? (logo || null) : row.logo;
 
   db.prepare('UPDATE feeds SET name = ?, url = ?, logo = ? WHERE id = ?').run(
@@ -353,9 +353,9 @@ function updateContent(id, dashboardId, { url, title, type }) {
   );
   if (!row) return null;
 
-  const newUrl = url || row.url;
-  const newTitle = title || row.title;
-  const newType = type || row.type;
+  const newUrl = url !== undefined ? url : row.url;
+  const newTitle = title !== undefined ? title : row.title;
+  const newType = type !== undefined ? type : row.type;
 
   db.prepare('UPDATE content SET url = ?, title = ?, type = ? WHERE id = ?').run(
     newUrl,
@@ -402,11 +402,14 @@ function getConfig(dashboardId) {
 }
 
 function updateConfig(dashboardId, updates) {
+  // Verify dashboard exists to avoid FK violations
+  if (!getDashboard(dashboardId)) return null;
+
   // Ensure config row exists
-  const exists = db
+  const configExists = db
     .prepare('SELECT dashboard_id FROM config WHERE dashboard_id = ?')
     .get(dashboardId);
-  if (!exists) {
+  if (!configExists) {
     db.prepare('INSERT INTO config (dashboard_id) VALUES (?)').run(dashboardId);
   }
 
