@@ -462,22 +462,43 @@ For Docker deployments, mount the `data/` directory as a volume to persist the d
 
 ```
 news-ticker/
-├── server.js              # Express + WebSocket server
-├── package.json           # Dependencies
+├── server.js              # HTTP server entry point
+├── package.json           # Dependencies & scripts
+├── vitest.config.js       # Test configuration
+├── .mise.toml             # Mise task runner config
 ├── Dockerfile             # Container definition
 ├── docker-compose.yml     # Docker Compose config
 ├── .dockerignore          # Build exclusions
 ├── .gitignore             # Git exclusions
 ├── README.md              # This file
+├── .github/
+│   └── workflows/
+│       └── test.yml       # CI test workflow
 ├── data/                  # Data persistence
 │   └── news-ticker.db     # SQLite database
 ├── src/                   # Backend source
-│   ├── app.js             # Express app
+│   ├── app.js             # Express app setup & routing
 │   ├── db.js              # SQLite database layer
 │   ├── socket.js          # WebSocket handlers
-│   ├── middleware.js     # Shared middleware
+│   ├── middleware.js       # Shared middleware
 │   ├── routes/            # API route handlers
-│   └── services/          # Business logic (e.g. RSS)
+│   │   ├── config.js
+│   │   ├── content.js
+│   │   ├── dashboards.js
+│   │   ├── feeds.js
+│   │   └── ticker.js
+│   └── services/          # Business logic
+│       └── rss.js         # RSS feed fetching & caching
+├── tests/                 # Test suite
+│   ├── setup.js           # Test environment setup
+│   ├── helpers.js         # Shared test utilities
+│   ├── config.test.js
+│   ├── content.test.js
+│   ├── dashboards.test.js
+│   ├── db.test.js
+│   ├── feeds.test.js
+│   ├── health.test.js
+│   └── ticker.test.js
 └── public/                # Frontend files
     ├── index.html
     ├── css/
@@ -489,6 +510,7 @@ news-ticker/
 ### Environment Variables
 
 - `PORT` - Server port (default: 3000)
+- `DATA_DIR` - Path to the data directory for the SQLite database (default: `./data`)
 
 ### Building Docker Image
 
@@ -505,6 +527,44 @@ docker run -d \
   --name news-ticker \
   news-ticker-display
 ```
+
+### Testing
+
+The project uses [Vitest](https://vitest.dev/) as the test framework and [Supertest](https://github.com/ladjs/supertest) for HTTP assertion testing. Each test run uses an isolated temporary SQLite database, so tests never affect production data.
+
+```bash
+# Run the full test suite
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+```
+
+Test files are in the `tests/` directory with coverage for all API routes, the database layer, and the health endpoint.
+
+### Continuous Integration
+
+A GitHub Actions workflow (`.github/workflows/test.yml`) runs the test suite automatically on:
+
+- Pushes to `main` / `master`
+- All pull requests
+
+### Mise Task Runner
+
+The project includes a [mise](https://mise.jdx.dev/) configuration (`.mise.toml`) that pins Node.js 24 and provides convenient task aliases:
+
+```bash
+mise run setup          # Install dependencies
+mise run dev            # Start development server
+mise run test           # Run test suite
+mise run test-watch     # Run tests in watch mode
+mise run docker-up      # Start with Docker Compose
+mise run docker-down    # Stop Docker Compose services
+mise run docker-logs    # Follow Docker Compose logs
+mise run docker-build   # Build Docker image
+```
+
+Using mise is entirely optional; standard `npm` commands work the same way.
 
 ## Security Considerations
 
@@ -544,9 +604,10 @@ docker run -d \
 
 ### Data Not Persisting
 
-- Check file permissions on `data/` directory and `data/dashboards/` subdirectories
+- Check file permissions on the `data/` directory
 - Verify volume mounts in Docker (if using) include the entire `data/` directory
-- Check server logs for file write errors
+- Check server logs for database write errors
+- Ensure the `DATA_DIR` environment variable (if set) points to a writable directory
 - Ensure dashboard ID is valid (alphanumeric, dashes, underscores only)
 
 ### Dashboard Not Found
