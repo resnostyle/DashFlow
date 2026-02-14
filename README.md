@@ -530,7 +530,7 @@ docker run -d \
 
 ### Testing
 
-The project uses [Vitest](https://vitest.dev/) as the test framework and [Supertest](https://github.com/ladakh/supertest) for HTTP assertion testing. Each test run uses an isolated temporary SQLite database, so tests never affect production data.
+The project uses [Vitest](https://vitest.dev/) as the test framework and [Supertest](https://github.com/ladjs/supertest) for HTTP assertion testing. Each test run uses an isolated temporary SQLite database, so tests never affect production data.
 
 ```bash
 # Run the full test suite
