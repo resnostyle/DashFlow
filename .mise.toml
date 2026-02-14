@@ -65,3 +65,9 @@ node-version = { run = "node --version", description = "Show Node.js version" }
 
 # Check npm version
 npm-version = { run = "npm --version", description = "Show npm version" }
+
+# Run tests
+test = { run = "npm test", description = "Run test suite" }
+
+# Run tests in watch mode
+test-watch = { run = "npm run test:watch", description = "Run tests in watch mode" }

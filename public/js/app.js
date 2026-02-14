@@ -203,43 +203,22 @@ function updateTicker() {
 }
 
 // WebSocket event handlers
+function requestDashboardData() {
+    socket.emit('dashboard:request', dashboardId);
+}
+
 socket.on('connect', () => {
     console.log('Connected to server');
     console.log('Dashboard ID:', dashboardId);
-    
-    // Request dashboard data
-    socket.emit('dashboard:request', dashboardId);
-    
-    // Request initial data
-    fetch(`/api/content?dashboard=${dashboardId}`)
-        .then(res => res.json())
-        .then(data => {
-            contentItems = data;
-            displayContent();
-            startContentRotation();
-        })
-        .catch(err => console.error('Error fetching content:', err));
-    
-    fetch(`/api/ticker?dashboard=${dashboardId}`)
-        .then(res => res.json())
-        .then(data => {
-            tickerItems = data;
-            updateTicker();
-        })
-        .catch(err => console.error('Error fetching ticker:', err));
-    
-    fetch(`/api/config?dashboard=${dashboardId}`)
-        .then(res => res.json())
-        .then(data => {
-            config = data;
-            updateTicker(); // Update ticker visibility based on config
-            startContentRotation();
-        })
-        .catch(err => console.error('Error fetching config:', err));
+    requestDashboardData();
 });
 
 socket.on('disconnect', () => {
     console.log('Disconnected from server');
+});
+
+socket.io.on('reconnect', () => {
+    requestDashboardData();
 });
 
 // Dashboard-specific event handlers
