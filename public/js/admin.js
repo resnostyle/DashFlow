@@ -62,14 +62,23 @@ async function loadDashboards() {
   const select = document.getElementById('dashboardSelect');
   const current = select.value;
   select.textContent = '';
-  for (const d of list) {
-    const opt = document.createElement('option');
-    opt.value = d.id;
-    opt.textContent = d.name || d.id;
-    select.appendChild(opt);
+  if (list.length === 0) {
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = 'No dashboards';
+    select.appendChild(placeholder);
+  } else {
+    for (const d of list) {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name || d.id;
+      select.appendChild(opt);
+    }
+    if (current && list.some(d => d.id === current)) select.value = current;
+    else select.value = list[0].id;
   }
-  if (current && list.some(d => d.id === current)) select.value = current;
-  else if (list.length) select.value = list[0].id;
   updateViewDashboardLink();
   renderDashboardsList(list);
 }

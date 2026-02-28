@@ -20,7 +20,9 @@
             <h2>Dashboard</h2>
             <div class="dashboard-select-row">
                 <label for="dashboardSelect">Current dashboard:</label>
-                <select id="dashboardSelect"></select>
+                <select id="dashboardSelect">
+                    <option value="" disabled selected>Loading dashboards…</option>
+                </select>
                 <a id="viewDashboardLink" href="/dashboard/default" class="admin-link">View</a>
             </div>
             <form id="createDashboardForm" class="admin-form">
@@ -110,5 +112,10 @@
     </div>
 
     <script src="/js/admin.js"></script>
+    <noscript>
+        <p class="admin-empty" style="margin-top: 1rem;">
+            The admin UI requires JavaScript to function. Please enable JavaScript in your browser, or contact your administrator for support.
+        </p>
+    </noscript>
 </body>
 </html>

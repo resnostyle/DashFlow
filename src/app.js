@@ -1,12 +1,26 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+
+const { ensureAuthenticated } = require('./middleware/auth');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.ADMIN_SESSION_SECRET || 'dev-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production' },
+  }),
+);
 
 // Redirect root to default dashboard (before static so / wins over index.html)
 app.get('/', (_req, res) => {
@@ -20,8 +34,28 @@ app.get('/dashboard/:id', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-// Admin page (TODO: add authentication/authorization middleware before production use)
-app.get('/admin', (_req, res) => {
+// Admin login (unprotected)
+app.get('/admin/login', (_req, res) => {
+  if (process.env.ADMIN_PASSWORD && _req.session?.authenticated) {
+    return res.redirect('/admin');
+  }
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-login.html'));
+});
+
+app.post('/admin/login', (req, res) => {
+  if (!process.env.ADMIN_PASSWORD) {
+    return res.redirect('/admin');
+  }
+  if (req.body.password === process.env.ADMIN_PASSWORD) {
+    req.session.authenticated = true;
+    req.session.role = 'admin';
+    return res.redirect('/admin');
+  }
+  res.redirect('/admin/login?error=invalid');
+});
+
+// Admin page (protected when ADMIN_PASSWORD is set)
+app.get('/admin', ensureAuthenticated, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
@@ -30,12 +64,12 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.use('/api/dashboards', require('./routes/dashboards'));
-app.use('/api/feeds', require('./routes/feeds'));
-app.use('/api/content', require('./routes/content'));
-app.use('/api/config', require('./routes/config'));
-app.use('/api/ticker', require('./routes/ticker'));
+// API routes (protected when ADMIN_PASSWORD is set)
+app.use('/api/dashboards', ensureAuthenticated, require('./routes/dashboards'));
+app.use('/api/feeds', ensureAuthenticated, require('./routes/feeds'));
+app.use('/api/content', ensureAuthenticated, require('./routes/content'));
+app.use('/api/config', ensureAuthenticated, require('./routes/config'));
+app.use('/api/ticker', ensureAuthenticated, require('./routes/ticker'));
 
 // Error handling middleware (must be last)
 app.use((err, _req, res, _next) => {
