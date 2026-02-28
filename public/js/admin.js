@@ -163,7 +163,7 @@ async function createDashboard(e) {
  */
 async function updateDashboard(id, name, description) {
   try {
-    await api('PUT', `/dashboards/${id}`, { name, description });
+    await api('PUT', `/dashboards/${encodeURIComponent(id)}`, { name, description });
     showToast('Dashboard updated');
     await loadDashboards();
   } catch (err) {
@@ -180,7 +180,7 @@ async function updateDashboard(id, name, description) {
 async function deleteDashboard(id) {
   if (!confirm(`Delete dashboard "${id}"?`)) return;
   try {
-    await api('DELETE', `/dashboards/${id}`);
+    await api('DELETE', `/dashboards/${encodeURIComponent(id)}`);
     showToast('Dashboard deleted');
     await Promise.all([loadDashboards(), loadFeeds(), loadContent(), loadConfig()]);
   } catch (err) {
@@ -209,7 +209,7 @@ function editDashboard(id) {
  */
 async function loadFeeds() {
   const dashboardId = getDashboardId();
-  const list = await api('GET', `/feeds?dashboard=${dashboardId}`);
+  const list = await api('GET', `/feeds?dashboard=${encodeURIComponent(dashboardId)}`);
   renderFeedsList(list);
 }
 
@@ -278,7 +278,7 @@ async function addFeed(e) {
     return;
   }
   try {
-    await api('POST', `/feeds?dashboard=${getDashboardId()}`, { name, url, logo: logo || undefined });
+    await api('POST', `/feeds?dashboard=${encodeURIComponent(getDashboardId())}`, { name, url, logo: logo || undefined });
     showToast('Feed added');
     document.getElementById('addFeedForm').reset();
     await loadFeeds();
@@ -295,7 +295,7 @@ async function addFeed(e) {
  */
 async function deleteFeed(id) {
   try {
-    await api('DELETE', `/feeds/${id}?dashboard=${getDashboardId()}`);
+    await api('DELETE', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Feed deleted');
     await loadFeeds();
   } catch (err) {
@@ -310,7 +310,7 @@ async function deleteFeed(id) {
  */
 async function loadContent() {
   const dashboardId = getDashboardId();
-  const list = await api('GET', `/content?dashboard=${dashboardId}`);
+  const list = await api('GET', `/content?dashboard=${encodeURIComponent(dashboardId)}`);
   renderContentList(list);
 }
 
@@ -378,7 +378,7 @@ async function addContent(e) {
     return;
   }
   try {
-    await api('POST', `/content?dashboard=${getDashboardId()}`, { url, title, type });
+    await api('POST', `/content?dashboard=${encodeURIComponent(getDashboardId())}`, { url, title, type });
     showToast('Content added');
     document.getElementById('addContentForm').reset();
     await loadContent();
@@ -395,7 +395,7 @@ async function addContent(e) {
  */
 async function deleteContent(id) {
   try {
-    await api('DELETE', `/content/${id}?dashboard=${getDashboardId()}`);
+    await api('DELETE', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Content deleted');
     await loadContent();
   } catch (err) {
@@ -414,7 +414,7 @@ async function deleteContent(id) {
  */
 async function loadConfig() {
   const dashboardId = getDashboardId();
-  const cfg = await api('GET', `/config?dashboard=${dashboardId}`);
+  const cfg = await api('GET', `/config?dashboard=${encodeURIComponent(dashboardId)}`);
   document.getElementById('rotationInterval').value = cfg.rotationInterval ?? 30000;
   document.getElementById('tickerRefreshInterval').value = cfg.tickerRefreshInterval ?? 300000;
   document.getElementById('maxTickerItems').value = cfg.maxTickerItems ?? 50;
@@ -466,7 +466,7 @@ async function saveConfig(e) {
     return;
   }
   try {
-    await api('POST', `/config?dashboard=${getDashboardId()}`, {
+    await api('POST', `/config?dashboard=${encodeURIComponent(getDashboardId())}`, {
       rotationInterval,
       tickerRefreshInterval,
       maxTickerItems,
@@ -485,7 +485,7 @@ async function saveConfig(e) {
  */
 function updateViewDashboardLink() {
   const link = document.getElementById('viewDashboardLink');
-  link.href = '/dashboard/' + getDashboardId();
+  link.href = '/dashboard/' + encodeURIComponent(getDashboardId());
 }
 
 // Init

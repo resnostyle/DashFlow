@@ -6,6 +6,19 @@ const session = require('express-session');
 
 const { ensureAuthenticated } = require('./middleware/auth');
 
+if (
+  process.env.ADMIN_PASSWORD &&
+  process.env.NODE_ENV === 'production' &&
+  !process.env.ADMIN_SESSION_SECRET
+) {
+  throw new Error(
+    'ADMIN_SESSION_SECRET is required when ADMIN_PASSWORD is set in production',
+  );
+}
+
+const sessionSecret =
+  process.env.ADMIN_SESSION_SECRET || 'dev-secret-change-in-production';
+
 const app = express();
 
 // Middleware
@@ -15,16 +28,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   session({
-    secret: process.env.ADMIN_SESSION_SECRET || 'dev-secret-change-in-production',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production' },
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    },
   }),
 );
 
 // Redirect root to default dashboard (before static so / wins over index.html)
 app.get('/', (_req, res) => {
   res.redirect('/dashboard/default');
+});
+
+// Serve admin.html through auth so /admin.html cannot bypass the protected /admin route
+app.get('/admin.html', ensureAuthenticated, (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -46,12 +68,18 @@ app.post('/admin/login', (req, res) => {
   if (!process.env.ADMIN_PASSWORD) {
     return res.redirect('/admin');
   }
-  if (req.body.password === process.env.ADMIN_PASSWORD) {
+  if (req.body.password !== process.env.ADMIN_PASSWORD) {
+    return res.redirect('/admin/login?error=invalid');
+  }
+  req.session.regenerate((err) => {
+    if (err) {
+      console.error('Session regenerate error:', err);
+      return res.status(500).send('Login failed. Please try again.');
+    }
     req.session.authenticated = true;
     req.session.role = 'admin';
-    return res.redirect('/admin');
-  }
-  res.redirect('/admin/login?error=invalid');
+    res.redirect('/admin');
+  });
 });
 
 // Admin page (protected when ADMIN_PASSWORD is set)

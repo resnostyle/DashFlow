@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
+import { createRequire } from 'module';
 import { getApp } from './helpers.js';
+
+const require = createRequire(import.meta.url);
 
 describe('Admin authentication', () => {
   let app;
@@ -18,6 +21,12 @@ describe('Admin authentication', () => {
   describe('when unauthenticated', () => {
     it('GET /admin redirects to /admin/login', async () => {
       const res = await request(app).get('/admin');
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe('/admin/login');
+    });
+
+    it('GET /admin.html redirects to /admin/login (cannot bypass auth via direct file)', async () => {
+      const res = await request(app).get('/admin.html');
       expect(res.status).toBe(302);
       expect(res.headers.location).toBe('/admin/login');
     });
@@ -93,6 +102,14 @@ describe('Admin authentication', () => {
       expect(res.text).toContain('News Ticker Admin');
     });
 
+    it('allows authenticated access to /admin.html after login', async () => {
+      const agent = request.agent(app);
+      await agent.post('/admin/login').send({ password: 'test-secret' });
+      const res = await agent.get('/admin.html');
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('News Ticker Admin');
+    });
+
     it('allows authenticated access to API after login', async () => {
       const agent = request.agent(app);
       await agent.post('/admin/login').send({ password: 'test-secret' });
@@ -137,5 +154,26 @@ describe('Admin authentication (disabled)', () => {
       .send({ password: 'anything' });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('/admin');
+  });
+});
+
+describe('Admin authentication startup validation', () => {
+  const origEnv = process.env;
+
+  afterAll(() => {
+    process.env = origEnv;
+  });
+
+  it('throws when ADMIN_PASSWORD is set in production without ADMIN_SESSION_SECRET', () => {
+    process.env = {
+      ...origEnv,
+      ADMIN_PASSWORD: 'secret',
+      NODE_ENV: 'production',
+      ADMIN_SESSION_SECRET: '',
+    };
+    delete require.cache[require.resolve('../src/app')];
+    expect(() => require('../src/app')).toThrow(
+      /ADMIN_SESSION_SECRET is required when ADMIN_PASSWORD is set in production/,
+    );
   });
 });
