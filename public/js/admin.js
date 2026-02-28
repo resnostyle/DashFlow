@@ -2,10 +2,23 @@
 
 const API = '/api';
 
+/**
+ * Get the currently selected dashboard id from the dashboard select element.
+ * @returns {string} The selected dashboard id, or `'default'` if no value is set.
+ */
 function getDashboardId() {
   return document.getElementById('dashboardSelect').value || 'default';
 }
 
+/**
+ * Displays a transient toast message in the page's '#toast' element.
+ *
+ * Shows the provided message, applies error or success styling, makes the toast visible,
+ * clears any previously scheduled hide timer, and hides the toast after 4 seconds.
+ *
+ * @param {string} message - The text to display inside the toast.
+ * @param {boolean} [isError=false] - If true, apply error styling; otherwise apply success styling.
+ */
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
@@ -17,6 +30,14 @@ function showToast(message, isError = false) {
   }, 4000);
 }
 
+/**
+ * Perform an HTTP request against the configured API base and return the parsed JSON response.
+ * @param {string} method - HTTP method (e.g., "GET", "POST", "PUT", "DELETE").
+ * @param {string} path - Path appended to the API base (should begin with '/').
+ * @param {any} [body] - Optional request payload which will be JSON-stringified and sent with a Content-Type of application/json.
+ * @returns {any} The parsed JSON response from the server (or an empty object when response body is not valid JSON).
+ * @throws {Error} When the response has a non-ok HTTP status; the error message is taken from the response `error` field or `HTTP {status}`.
+ */
 async function api(method, path, body) {
   const opts = { method, headers: {} };
   if (body) {
@@ -29,7 +50,13 @@ async function api(method, path, body) {
   return data;
 }
 
-// Dashboards
+/**
+ * Load dashboards from the API and update the dashboard selector, view link, and dashboard list UI.
+ *
+ * Fetches the dashboard list, populates the element with id `dashboardSelect` with options (using each
+ * dashboard's `name` or `id`), preserves the previously selected dashboard when present or selects the
+ * first dashboard if none, updates the view dashboard link, and calls `renderDashboardsList` with the list.
+ */
 async function loadDashboards() {
   const list = await api('GET', '/dashboards');
   const select = document.getElementById('dashboardSelect');
@@ -41,6 +68,15 @@ async function loadDashboards() {
   renderDashboardsList(list);
 }
 
+/**
+ * Render the provided dashboard entries into the UI and wire their edit/delete actions.
+ *
+ * Inserts list items into the element with id "dashboardsList", showing each dashboard's name (or id)
+ * and id, omitting a Delete button for the dashboard whose id is "default". Click handlers for the
+ * edit and delete controls are attached after rendering.
+ *
+ * @param {Array<Object>} list - Array of dashboard objects. Each object must include an `id` string and may include a `name` string.
+ */
 function renderDashboardsList(list) {
   const el = document.getElementById('dashboardsList');
   el.innerHTML = list.map(d => {
@@ -63,6 +99,12 @@ function renderDashboardsList(list) {
   });
 }
 
+/**
+ * Handle the create-dashboard form submission by validating input, creating a dashboard, and refreshing related UI sections.
+ * 
+ * Validates the dashboard ID (required; letters, numbers, dashes, and underscores only). On successful creation shows a success toast, resets the form, and reloads dashboards, feeds, content, and config. On validation failure or API error shows an error toast.
+ * @param {Event} e - Submit event from the create-dashboard form.
+ */
 async function createDashboard(e) {
   e.preventDefault();
   const id = document.getElementById('dashboardId').value.trim();
@@ -89,6 +131,12 @@ async function createDashboard(e) {
   }
 }
 
+/**
+ * Update a dashboard's name and description on the server and refresh the dashboards list.
+ * @param {string} id - The dashboard identifier to update.
+ * @param {string} name - The new display name for the dashboard.
+ * @param {string} description - The new description for the dashboard.
+ */
 async function updateDashboard(id, name, description) {
   try {
     await api('PUT', `/dashboards/${id}`, { name, description });
@@ -99,6 +147,12 @@ async function updateDashboard(id, name, description) {
   }
 }
 
+/**
+ * Delete the dashboard with the given id after confirming with the user and refresh related UI sections.
+ *
+ * Prompts the user for confirmation; if confirmed, removes the dashboard and refreshes dashboards, feeds, content, and config views. On failure, displays an error message.
+ * @param {string} id - The dashboard identifier to delete.
+ */
 async function deleteDashboard(id) {
   if (!confirm(`Delete dashboard "${id}"?`)) return;
   try {
@@ -113,6 +167,12 @@ async function deleteDashboard(id) {
   }
 }
 
+/**
+ * Prompts the user to edit the dashboard's name and description and updates it when confirmed.
+ *
+ * If the dashboard id is not found or the user cancels either prompt, no action is taken.
+ * @param {string} id - The dashboard identifier to edit.
+ */
 function editDashboard(id) {
   const d = Array.from(document.querySelectorAll('#dashboardsList .admin-list-item')).find(el => el.dataset.id === id);
   if (!d) return;
@@ -123,13 +183,26 @@ function editDashboard(id) {
   updateDashboard(id, name, description);
 }
 
-// Feeds
+/**
+ * Load the feeds for the currently selected dashboard and render them into the UI.
+ */
 async function loadFeeds() {
   const dashboardId = getDashboardId();
   const list = await api('GET', `/feeds?dashboard=${dashboardId}`);
   renderFeedsList(list);
 }
 
+/**
+ * Render the provided list of feeds into the #feedsList element and wire delete buttons.
+ *
+ * Populates the DOM element with id "feedsList" with each feed's name (or "Unnamed") and URL,
+ * shows a "No feeds" message when the list is empty, and attaches click handlers that delete
+ * the corresponding feed when its Delete button is clicked.
+ * @param {Array<Object>} list - Array of feed objects to render.
+ * @param {string} list[].id - Unique identifier of the feed.
+ * @param {string} [list[].name] - Display name of the feed; may be absent.
+ * @param {string} list[].url - URL of the feed.
+ */
 function renderFeedsList(list) {
   const el = document.getElementById('feedsList');
   el.innerHTML = list.length ? list.map(f => `
@@ -145,6 +218,10 @@ function renderFeedsList(list) {
   });
 }
 
+/**
+ * Handle the add-feed form submission: validate the feed and (optional) logo URLs, create the feed for the current dashboard via the API, show success or error toasts, reset the form, and reload the feeds list.
+ * @param {Event} e - The form submit event.
+ */
 async function addFeed(e) {
   e.preventDefault();
   const name = document.getElementById('feedName').value.trim();
@@ -171,6 +248,12 @@ async function addFeed(e) {
   }
 }
 
+/**
+ * Remove a feed by its id from the currently selected dashboard.
+ *
+ * Deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
+ * @param {string} id - The feed identifier to delete.
+ */
 async function deleteFeed(id) {
   try {
     await api('DELETE', `/feeds/${id}?dashboard=${getDashboardId()}`);
@@ -181,13 +264,24 @@ async function deleteFeed(id) {
   }
 }
 
-// Content
+/**
+ * Load content items for the current dashboard and render them into the UI.
+ *
+ * Fetches the content list for the selected dashboard and updates the page's content list display.
+ */
 async function loadContent() {
   const dashboardId = getDashboardId();
   const list = await api('GET', `/content?dashboard=${dashboardId}`);
   renderContentList(list);
 }
 
+/**
+ * Render a list of content items into the DOM and attach delete handlers.
+ *
+ * Populates the element with id "contentList" with the provided items; each item shows its title (or "Untitled" if missing) and URL. If the list is empty, displays a "No content" message. Adds click handlers to each item's Delete button that invoke `deleteContent` with the item's `id`.
+ *
+ * @param {Array<{id: string, url: string, title?: string}>} list - Array of content objects to render. Each object must include `id` and `url`; `title` is optional.
+ */
 function renderContentList(list) {
   const el = document.getElementById('contentList');
   el.innerHTML = list.length ? list.map(c => `
@@ -203,6 +297,14 @@ function renderContentList(list) {
   });
 }
 
+/**
+ * Handle the add-content form submission and create a new content item for the current dashboard.
+ *
+ * Validates the provided URL, posts `{ url, title, type }` to the server for the selected dashboard,
+ * shows a success or error toast, resets the form on success, and reloads the content list.
+ *
+ * @param {Event} e - The submit event from the add content form.
+ */
 async function addContent(e) {
   e.preventDefault();
   const url = document.getElementById('contentUrl').value.trim();
@@ -228,6 +330,12 @@ async function addContent(e) {
   }
 }
 
+/**
+ * Delete a content item from the currently selected dashboard.
+ *
+ * On success, displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
+ * @param {string} id - The ID of the content item to delete.
+ */
 async function deleteContent(id) {
   try {
     await api('DELETE', `/content/${id}?dashboard=${getDashboardId()}`);
@@ -238,7 +346,15 @@ async function deleteContent(id) {
   }
 }
 
-// Config
+/**
+ * Populate configuration form fields for the current dashboard from the server.
+ *
+ * Fetches the config for the selected dashboard and updates DOM elements:
+ * - Sets #rotationInterval to the fetched `rotationInterval` or 30000 if missing.
+ * - Sets #tickerRefreshInterval to the fetched `tickerRefreshInterval` or 300000 if missing.
+ * - Sets #maxTickerItems to the fetched `maxTickerItems` or 50 if missing.
+ * - Sets #tickerEnabled checked state to `true` unless the fetched `tickerEnabled` is explicitly `false`.
+ */
 async function loadConfig() {
   const dashboardId = getDashboardId();
   const cfg = await api('GET', `/config?dashboard=${dashboardId}`);
@@ -248,6 +364,20 @@ async function loadConfig() {
   document.getElementById('tickerEnabled').checked = cfg.tickerEnabled !== false;
 }
 
+/**
+ * Validate and save dashboard configuration from the form inputs.
+ *
+ * Reads rotationInterval, tickerRefreshInterval, maxTickerItems, and tickerEnabled
+ * from the page, validates their constraints, posts the configuration for the
+ * current dashboard, and shows a success or error toast.
+ *
+ * Validation constraints:
+ * - rotationInterval must be >= 5000
+ * - tickerRefreshInterval must be >= 60000
+ * - maxTickerItems must be between 10 and 200 (inclusive)
+ *
+ * @param {Event} e - The form submit event.
+ */
 async function saveConfig(e) {
   e.preventDefault();
   const rotationInterval = parseInt(document.getElementById('rotationInterval').value, 10);
@@ -279,6 +409,11 @@ async function saveConfig(e) {
   }
 }
 
+/**
+ * Update the "viewDashboardLink" element's href to point to the currently selected dashboard.
+ *
+ * Sets the href to "/dashboard/{id}", where {id} is the current dashboard id.
+ */
 function updateViewDashboardLink() {
   const link = document.getElementById('viewDashboardLink');
   link.href = '/dashboard/' + getDashboardId();
