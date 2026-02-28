@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Ticker Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>News Ticker Admin</h1>
+            <a href="/dashboard/default" class="admin-link">View Display</a>
+        </header>
+
+        <div id="toast" class="toast" aria-live="polite"></div>
+
+        <section class="admin-section">
+            <h2>Dashboard</h2>
+            <div class="dashboard-select-row">
+                <label for="dashboardSelect">Current dashboard:</label>
+                <select id="dashboardSelect">
+                    <option value="" disabled selected>Loading dashboards…</option>
+                </select>
+                <a id="viewDashboardLink" href="/dashboard/default" class="admin-link">View</a>
+            </div>
+            <form id="createDashboardForm" class="admin-form">
+                <h3>Create dashboard</h3>
+                <div class="form-row">
+                    <label for="dashboardId">ID <span class="required">*</span></label>
+                    <input type="text" id="dashboardId" name="id" required pattern="[a-zA-Z0-9_-]+" placeholder="e.g. news">
+                </div>
+                <div class="form-row">
+                    <label for="dashboardName">Name</label>
+                    <input type="text" id="dashboardName" name="name" placeholder="Dashboard name">
+                </div>
+                <div class="form-row">
+                    <label for="dashboardDesc">Description</label>
+                    <input type="text" id="dashboardDesc" name="description" placeholder="Optional description">
+                </div>
+                <button type="submit">Create</button>
+            </form>
+            <div id="dashboardsList" class="admin-list"></div>
+        </section>
+
+        <section class="admin-section">
+            <h2>Feeds</h2>
+            <form id="addFeedForm" class="admin-form">
+                <div class="form-row">
+                    <label for="feedName">Name</label>
+                    <input type="text" id="feedName" name="name" placeholder="Feed name">
+                </div>
+                <div class="form-row">
+                    <label for="feedUrl">URL <span class="required">*</span></label>
+                    <input type="url" id="feedUrl" name="url" required placeholder="https://example.com/feed.xml">
+                </div>
+                <div class="form-row">
+                    <label for="feedLogo">Logo URL</label>
+                    <input type="url" id="feedLogo" name="logo" placeholder="https://example.com/logo.png">
+                </div>
+                <button type="submit">Add feed</button>
+            </form>
+            <div id="feedsList" class="admin-list"></div>
+        </section>
+
+        <section class="admin-section">
+            <h2>Content</h2>
+            <form id="addContentForm" class="admin-form">
+                <div class="form-row">
+                    <label for="contentUrl">URL <span class="required">*</span></label>
+                    <input type="url" id="contentUrl" name="url" required placeholder="https://youtube.com/watch?v=... or webpage URL">
+                </div>
+                <div class="form-row">
+                    <label for="contentTitle">Title</label>
+                    <input type="text" id="contentTitle" name="title" placeholder="Display title">
+                </div>
+                <div class="form-row">
+                    <label for="contentType">Type</label>
+                    <select id="contentType" name="type">
+                        <option value="webpage">Webpage</option>
+                        <option value="youtube">YouTube</option>
+                    </select>
+                </div>
+                <button type="submit">Add content</button>
+            </form>
+            <div id="contentList" class="admin-list"></div>
+        </section>
+
+        <section class="admin-section">
+            <h2>Configuration</h2>
+            <form id="configForm" class="admin-form">
+                <div class="form-row">
+                    <label for="rotationInterval">Rotation interval (ms, min 5000)</label>
+                    <input type="number" id="rotationInterval" name="rotationInterval" min="5000" step="1000">
+                </div>
+                <div class="form-row">
+                    <label for="tickerRefreshInterval">Ticker refresh (ms, min 60000)</label>
+                    <input type="number" id="tickerRefreshInterval" name="tickerRefreshInterval" min="60000" step="1000">
+                </div>
+                <div class="form-row">
+                    <label for="maxTickerItems">Max ticker items (10&ndash;200)</label>
+                    <input type="number" id="maxTickerItems" name="maxTickerItems" min="10" max="200">
+                </div>
+                <div class="form-row checkbox-row">
+                    <label for="tickerEnabled">Ticker enabled</label>
+                    <input type="checkbox" id="tickerEnabled" name="tickerEnabled" checked>
+                </div>
+                <button type="submit">Save config</button>
+            </form>
+        </section>
+    </div>
+
+    <script src="/js/admin.js"></script>
+    <noscript>
+        <p class="admin-empty" style="margin-top: 1rem;">
+            The admin UI requires JavaScript to function. Please enable JavaScript in your browser, or contact your administrator for support.
+        </p>
+    </noscript>
+</body>
+</html>

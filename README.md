@@ -10,6 +10,8 @@ A containerized Node.js application featuring a real-time RSS news ticker and dy
 - **YouTube Support**: Automatic detection and embedding of YouTube videos
 - **Real-time Updates**: WebSocket-based real-time updates without page refreshes
 - **REST API**: Full CRUD API for managing dashboards, feeds, content, and configuration
+- **Admin UI**: Web-based interface at `/admin` for managing dashboards, feeds, content, and config without using the API directly
+- **Optional Authentication**: When `ADMIN_PASSWORD` is set, admin and API routes are protected with session-based login
 - **Docker Support**: Containerized for easy deployment
 
 ## Architecture
@@ -39,9 +41,10 @@ docker-compose down
 
 The application will be available at `http://localhost:3000`
 
-Access dashboards via:
+Access the application via:
 - Default dashboard: `http://localhost:3000` or `http://localhost:3000/dashboard/default`
 - Custom dashboard: `http://localhost:3000/dashboard/{dashboard-id}`
+- Admin UI: `http://localhost:3000/admin` (requires login when `ADMIN_PASSWORD` is set)
 
 ### Manual Setup
 
@@ -57,6 +60,8 @@ npm run dev
 ```
 
 ## API Endpoints
+
+When `ADMIN_PASSWORD` is set, all `/api/*` routes require authentication. Log in at `/admin/login` first; session cookies are used for subsequent requests. The `/health` endpoint remains public.
 
 ### Dashboard Management
 
@@ -268,7 +273,8 @@ Response:
 {
   "rotationInterval": 30000,
   "tickerRefreshInterval": 300000,
-  "maxTickerItems": 50
+  "maxTickerItems": 50,
+  "tickerEnabled": true
 }
 ```
 
@@ -352,6 +358,10 @@ socket.on('config:update:news', (config) => {
   console.log('Config updated for news dashboard:', config);
 });
 ```
+
+## Admin UI
+
+The admin UI at `/admin` provides a form-based interface for managing dashboards, feeds, content, and configuration. When `ADMIN_PASSWORD` is set, you must log in at `/admin/login` before accessing the admin page or using the API. The display page (`/dashboard/:id`) and health check (`/health`) remain public.
 
 ## Usage Examples
 
@@ -480,7 +490,9 @@ news-ticker/
 │   ├── app.js             # Express app setup & routing
 │   ├── db.js              # SQLite database layer
 │   ├── socket.js          # WebSocket handlers
-│   ├── middleware.js       # Shared middleware
+│   ├── middleware.js      # Shared middleware
+│   ├── middleware/
+│   │   └── auth.js        # Admin authentication middleware
 │   ├── routes/            # API route handlers
 │   │   ├── config.js
 │   │   ├── content.js
@@ -498,19 +510,26 @@ news-ticker/
 │   ├── db.test.js
 │   ├── feeds.test.js
 │   ├── health.test.js
+│   ├── auth.test.js       # Admin authentication tests
 │   └── ticker.test.js
 └── public/                # Frontend files
-    ├── index.html
+    ├── index.html         # Display page
+    ├── admin.html         # Admin UI
+    ├── admin-login.html   # Admin login page
     ├── css/
-    │   └── style.css
+    │   ├── style.css
+    │   └── admin.css
     └── js/
-        └── app.js
+        ├── app.js         # Display logic
+        └── admin.js       # Admin UI logic
 ```
 
 ### Environment Variables
 
 - `PORT` - Server port (default: 3000)
 - `DATA_DIR` - Path to the data directory for the SQLite database (default: `./data`)
+- `ADMIN_PASSWORD` - When set, protects `/admin` and all `/api/*` routes with session-based authentication. Users must log in at `/admin/login` before accessing the admin UI or API.
+- `ADMIN_SESSION_SECRET` - Secret for signing session cookies (required when `ADMIN_PASSWORD` is set in production; defaults to a dev-only value)
 
 ### Building Docker Image
 
@@ -540,7 +559,7 @@ npm test
 npm run test:watch
 ```
 
-Test files are in the `tests/` directory with coverage for all API routes, the database layer, and the health endpoint.
+Test files are in the `tests/` directory with coverage for all API routes, the database layer, the health endpoint, and admin authentication.
 
 ### Continuous Integration
 
@@ -571,7 +590,7 @@ Using mise is entirely optional; standard `npm` commands work the same way.
 - Input validation on all API endpoints
 - URL validation before processing
 - CORS enabled (configure for production use)
-- No authentication implemented (add for production)
+- Optional session-based authentication: set `ADMIN_PASSWORD` to protect `/admin` and `/api/*` routes; set `ADMIN_SESSION_SECRET` in production
 
 ## Browser Compatibility
 
@@ -609,6 +628,12 @@ Using mise is entirely optional; standard `npm` commands work the same way.
 - Check server logs for database write errors
 - Ensure the `DATA_DIR` environment variable (if set) points to a writable directory
 - Ensure dashboard ID is valid (alphanumeric, dashes, underscores only)
+
+### Admin Login Fails or API Returns 401
+
+- Ensure `ADMIN_PASSWORD` is set if you intend to use authentication
+- When auth is enabled, log in at `/admin/login` before using the admin UI or API
+- For API access (e.g. curl), use a session cookie: log in via browser, copy the session cookie, and pass it with `-H "Cookie: connect.sid=..."` (or use a tool that preserves cookies)
 
 ### Dashboard Not Found
 
