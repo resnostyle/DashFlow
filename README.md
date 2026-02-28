@@ -5,6 +5,7 @@ A containerized Node.js application featuring a real-time RSS news ticker and dy
 ## Features
 
 - **Multiple Dashboards**: Create and manage multiple independent dashboards with unique content, feeds, and configuration
+- **Sports Dashboards**: Dedicated NCAA basketball dashboards (men's and women's) with live scores, schedules, and ACC standings powered by ESPN data
 - **RSS Ticker**: Continuous horizontal scrolling ticker at the bottom displaying news from multiple RSS feeds (can be disabled per dashboard)
 - **Dynamic Content Area**: Full-screen content display with automatic rotation
 - **YouTube Support**: Automatic detection and embedding of YouTube videos
@@ -18,6 +19,7 @@ A containerized Node.js application featuring a real-time RSS news ticker and dy
 - **Frontend**: Single-page application with vanilla JavaScript
 - **Data Storage**: SQLite database
 - **RSS Parsing**: Automatic fetching and merging of multiple RSS feeds (parallel fetch, per-dashboard refresh intervals)
+- **ESPN Integration**: Live NCAA basketball data from ESPN public API (no API key required)
 
 ## Quick Start
 
@@ -41,6 +43,8 @@ The application will be available at `http://localhost:3000`
 
 Access dashboards via:
 - Default dashboard: `http://localhost:3000` or `http://localhost:3000/dashboard/default`
+- NCAA Men's Basketball: `http://localhost:3000/dashboard/ncaa-mens`
+- NCAA Women's Basketball: `http://localhost:3000/dashboard/ncaa-womens`
 - Custom dashboard: `http://localhost:3000/dashboard/{dashboard-id}`
 
 ### Manual Setup
@@ -72,16 +76,24 @@ Response:
     "id": "default",
     "name": "Default Dashboard",
     "description": "Default dashboard",
-    "createdAt": "2024-01-01T00:00:00.000Z"
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "type": "default",
+    "sport": null
   },
   {
-    "id": "news",
-    "name": "News Dashboard",
-    "description": "News and current events",
-    "createdAt": "2024-01-01T00:00:00.000Z"
+    "id": "ncaa-mens",
+    "name": "NCAA Men's Basketball",
+    "description": "Duke, UNC, NC State, ACC",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "type": "sports",
+    "sport": "mens"
   }
 ]
 ```
+
+Dashboard fields:
+- `type` - Dashboard type: `"default"` (content rotation + ticker) or `"sports"` (NCAA basketball layout + ticker)
+- `sport` - Sport identifier (required when type is `"sports"`): `"mens"` or `"womens"`
 
 #### Create Dashboard
 ```http
@@ -94,6 +106,22 @@ Content-Type: application/json
   "description": "Weather information display"
 }
 ```
+
+To create a sports dashboard:
+```http
+POST /api/dashboards
+Content-Type: application/json
+
+{
+  "id": "my-sports",
+  "name": "My Sports Dashboard",
+  "description": "Custom sports dashboard",
+  "type": "sports",
+  "sport": "mens"
+}
+```
+
+**Note**: When `type` is `"sports"`, the `sport` field must be either `"mens"` or `"womens"`.
 
 #### Get Dashboard Details
 ```http
@@ -117,6 +145,54 @@ DELETE /api/dashboards/:id
 ```
 
 **Note**: The default dashboard cannot be deleted.
+
+### Sports Data (NCAA Basketball)
+
+Sports dashboards display NCAA basketball data from the ESPN API. Two sports dashboards are created automatically on startup:
+- `ncaa-mens` — NCAA Men's Basketball (Duke, UNC, NC State, ACC)
+- `ncaa-womens` — NCAA Women's Basketball (Duke, UNC, NC State, ACC)
+
+#### Get Sports Data
+```http
+GET /api/sports/ncaa?dashboard={dashboard-id}
+```
+
+**Note**: The dashboard must have `type: "sports"` and a valid `sport` value.
+
+Response:
+```json
+{
+  "sport": "mens",
+  "duke": {
+    "team": {
+      "id": "150",
+      "name": "Duke Blue Devils",
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png",
+      "record": "23-2",
+      "standing": "1st in ACC",
+      "rank": 3
+    },
+    "lastGame": {
+      "id": "401825518",
+      "name": "Duke Blue Devils at Virginia Cavaliers",
+      "date": "2026-02-14T00:00Z",
+      "status": "Final",
+      "completed": true,
+      "home": { "id": "258", "shortName": "Virginia", "score": "65" },
+      "away": { "id": "150", "shortName": "Duke", "score": "78" }
+    },
+    "upcomingGames": []
+  },
+  "unc": { "team": { "...": "..." }, "lastGame": null, "upcomingGames": [] },
+  "ncState": { "team": { "...": "..." }, "lastGame": null, "upcomingGames": [] },
+  "acc": {
+    "standings": [],
+    "todayGames": []
+  }
+}
+```
+
+Data is fetched from the ESPN public API and cached for 5 minutes. Sports dashboards are also refreshed automatically every 5 minutes and pushed to connected clients via WebSocket.
 
 ### Feeds Management
 
@@ -286,7 +362,7 @@ Content-Type: application/json
 ```
 
 Configuration options:
-- `rotationInterval` - Content rotation interval in milliseconds (minimum: 5000ms)
+- `rotationInterval` - Content rotation interval in milliseconds (minimum: 5000ms). For sports dashboards, this controls the interval between Duke and ACC page views.
 - `tickerRefreshInterval` - RSS feed refresh interval in milliseconds (minimum: 60000ms)
 - `maxTickerItems` - Maximum number of ticker items to display (range: 10-200)
 - `tickerEnabled` - Enable/disable RSS ticker for this dashboard (default: `true`). When `false`, no RSS feeds are fetched and the ticker is hidden.
@@ -353,6 +429,24 @@ socket.on('config:update:news', (config) => {
 });
 ```
 
+#### `dashboard:meta:{dashboard-id}`
+Emitted on initial connection with dashboard metadata including `type` and `sport`.
+```javascript
+socket.on('dashboard:meta:ncaa-mens', (meta) => {
+  console.log(meta);
+  // { type: 'sports', sport: 'mens', name: "NCAA Men's Basketball" }
+});
+```
+
+#### `sports:update:{dashboard-id}`
+Emitted when sports data is refreshed for a sports dashboard. Contains Duke, UNC, NC State, and ACC data.
+```javascript
+socket.on('sports:update:ncaa-mens', (data) => {
+  console.log('Duke record:', data.duke.team.record);
+  console.log('ACC games today:', data.acc.todayGames);
+});
+```
+
 ## Usage Examples
 
 ### Creating a New Dashboard
@@ -364,6 +458,39 @@ curl -X POST http://localhost:3000/api/dashboards \
     "id": "weather",
     "name": "Weather Dashboard",
     "description": "Weather information display"
+  }'
+```
+
+### Creating a Sports Dashboard
+
+```bash
+curl -X POST http://localhost:3000/api/dashboards \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "my-ncaam",
+    "name": "My NCAAM Dashboard",
+    "type": "sports",
+    "sport": "mens"
+  }'
+```
+
+### Adding RSS Feeds to a Sports Dashboard
+
+Sports dashboards support the RSS ticker alongside the sports widgets. Add feeds to show college basketball news at the bottom:
+
+```bash
+curl -X POST "http://localhost:3000/api/feeds?dashboard=ncaa-mens" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ESPN NCAAM",
+    "url": "https://www.espn.com/espn/rss/ncb/news"
+  }'
+
+curl -X POST "http://localhost:3000/api/feeds?dashboard=ncaa-womens" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ESPN NCAAW",
+    "url": "https://www.espn.com/espn/rss/ncw/news"
   }'
 ```
 
@@ -486,8 +613,10 @@ news-ticker/
 │   │   ├── content.js
 │   │   ├── dashboards.js
 │   │   ├── feeds.js
+│   │   ├── sports.js      # NCAA basketball sports data API
 │   │   └── ticker.js
 │   └── services/          # Business logic
+│       ├── espn.js        # ESPN API client (mens + womens NCAA basketball)
 │       └── rss.js         # RSS feed fetching & caching
 ├── tests/                 # Test suite
 │   ├── setup.js           # Test environment setup
@@ -498,13 +627,15 @@ news-ticker/
 │   ├── db.test.js
 │   ├── feeds.test.js
 │   ├── health.test.js
+│   ├── sports.test.js     # Sports API + ESPN integration tests
 │   └── ticker.test.js
 └── public/                # Frontend files
     ├── index.html
     ├── css/
     │   └── style.css
     └── js/
-        └── app.js
+        ├── app.js
+        └── sports-dashboard.js  # Sports layout widgets
 ```
 
 ### Environment Variables
@@ -615,6 +746,13 @@ Using mise is entirely optional; standard `npm` commands work the same way.
 - Verify dashboard exists using `GET /api/dashboards`
 - Check that dashboard ID in URL matches exactly (case-sensitive)
 - Ensure dashboard was created successfully (check server logs)
+
+### Sports Dashboard Not Loading
+
+- Verify the dashboard has `type: "sports"` and a valid `sport` (`"mens"` or `"womens"`)
+- Check server logs for ESPN API fetch errors
+- The ESPN API is public and rate-limited; data is cached for 5 minutes to reduce requests
+- Ensure the server has outbound HTTPS access to `site.api.espn.com`
 
 ## License
 

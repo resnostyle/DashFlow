@@ -13,12 +13,14 @@ const dashboardId = getDashboardIdFromUrl();
 let currentContentIndex = 0;
 let contentItems = [];
 let tickerItems = [];
+let dashboardMeta = { type: 'default', sport: null, name: '' };
 let config = {
     rotationInterval: 30000,
     tickerEnabled: true
 };
 
 let contentRotationInterval = null;
+let lastSportsData = null;
 
 // YouTube URL detection and conversion
 function isYouTubeUrl(url) {
@@ -96,6 +98,8 @@ function createContentElement(item) {
 }
 
 function displayContent() {
+    if (dashboardMeta.type === 'sports') return;
+
     const contentArea = document.getElementById('contentArea');
     
     if (contentItems.length === 0) {
@@ -225,12 +229,17 @@ socket.io.on('reconnect', () => {
 socket.on(`ticker:update:${dashboardId}`, (items) => {
     tickerItems = items;
     updateTicker();
+    if (dashboardMeta.type === 'sports' && lastSportsData && typeof renderSportsDashboard === 'function') {
+        renderSportsDashboard(lastSportsData, dashboardMeta.sport, tickerItems, config.rotationInterval);
+    }
 });
 
 socket.on(`content:update:${dashboardId}`, (items) => {
     const wasEmpty = contentItems.length === 0;
     contentItems = items;
     
+    if (dashboardMeta.type === 'sports') return;
+
     if (wasEmpty && items.length > 0) {
         currentContentIndex = 0;
     } else if (currentContentIndex >= items.length) {
@@ -249,6 +258,31 @@ socket.on(`config:update:${dashboardId}`, (newConfig) => {
     config = newConfig;
     updateTicker(); // Update ticker visibility when config changes
     startContentRotation();
+    if (dashboardMeta.type === 'sports' && lastSportsData && typeof renderSportsDashboard === 'function') {
+        renderSportsDashboard(lastSportsData, dashboardMeta.sport, tickerItems, config.rotationInterval);
+    }
+});
+
+socket.on(`dashboard:meta:${dashboardId}`, (meta) => {
+    dashboardMeta = meta;
+    if (meta.type === 'sports') {
+        stopContentRotation();
+        if (typeof clearSportsPageRotation === 'function') clearSportsPageRotation();
+        if (typeof renderSportsLoading === 'function') {
+            renderSportsLoading(meta.sport);
+        }
+    } else {
+        if (typeof clearSportsPageRotation === 'function') clearSportsPageRotation();
+        displayContent();
+        startContentRotation();
+    }
+});
+
+socket.on(`sports:update:${dashboardId}`, (data) => {
+    if (dashboardMeta.type === 'sports' && typeof renderSportsDashboard === 'function') {
+        lastSportsData = data;
+        renderSportsDashboard(data, dashboardMeta.sport, tickerItems, config.rotationInterval);
+    }
 });
 
 // Handle page visibility to pause/resume animations

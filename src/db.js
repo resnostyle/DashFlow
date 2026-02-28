@@ -23,9 +23,22 @@ function initialize() {
       id          TEXT PRIMARY KEY,
       name        TEXT NOT NULL,
       description TEXT DEFAULT '',
-      created_at  TEXT NOT NULL
+      created_at  TEXT NOT NULL,
+      type        TEXT DEFAULT 'default',
+      sport       TEXT
     );
+  `);
 
+  // Migration: add type/sport to existing dashboards table
+  const columns = db.prepare("PRAGMA table_info(dashboards)").all().map(r => r.name);
+  if (!columns.includes('type')) {
+    db.exec("ALTER TABLE dashboards ADD COLUMN type TEXT DEFAULT 'default'");
+  }
+  if (!columns.includes('sport')) {
+    db.exec('ALTER TABLE dashboards ADD COLUMN sport TEXT');
+  }
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS feeds (
       id            TEXT PRIMARY KEY,
       dashboard_id  TEXT NOT NULL,
@@ -122,7 +135,7 @@ function migrateFromJSON() {
 
     const stmts = {
       dashboard: db.prepare(
-        'INSERT OR IGNORE INTO dashboards (id, name, description, created_at) VALUES (?, ?, ?, ?)',
+        'INSERT OR IGNORE INTO dashboards (id, name, description, created_at, type, sport) VALUES (?, ?, ?, ?, ?, ?)',
       ),
       feed: db.prepare(
         'INSERT OR IGNORE INTO feeds (id, dashboard_id, name, url, logo, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -141,6 +154,8 @@ function migrateFromJSON() {
         d.name || d.id,
         d.description || '',
         d.createdAt || new Date().toISOString(),
+        d.type || 'default',
+        d.sport || null,
       );
 
       const dashDir = path.join(dashboardsDir, d.id);
@@ -223,8 +238,15 @@ function ensureDefaultDashboard() {
   if (!exists) {
     const create = db.transaction(() => {
       db.prepare(
-        'INSERT INTO dashboards (id, name, description, created_at) VALUES (?, ?, ?, ?)',
-      ).run('default', 'Default Dashboard', 'Default dashboard', new Date().toISOString());
+        'INSERT INTO dashboards (id, name, description, created_at, type, sport) VALUES (?, ?, ?, ?, ?, ?)',
+      ).run(
+        'default',
+        'Default Dashboard',
+        'Default dashboard',
+        new Date().toISOString(),
+        'default',
+        null,
+      );
       db.prepare('INSERT INTO config (dashboard_id) VALUES (?)').run('default');
     });
     create();
@@ -234,13 +256,45 @@ function ensureDefaultDashboard() {
   if (!cfgExists) {
     db.prepare('INSERT INTO config (dashboard_id) VALUES (?)').run('default');
   }
+
+  ensureSportsDashboards();
+}
+
+function ensureSportsDashboards() {
+  const sports = [
+    {
+      id: 'ncaa-mens',
+      name: "NCAA Men's Basketball",
+      description: 'Duke, UNC, NC State, ACC',
+      type: 'sports',
+      sport: 'mens',
+    },
+    {
+      id: 'ncaa-womens',
+      name: "NCAA Women's Basketball",
+      description: 'Duke, UNC, NC State, ACC',
+      type: 'sports',
+      sport: 'womens',
+    },
+  ];
+  for (const s of sports) {
+    const exists = db.prepare('SELECT id FROM dashboards WHERE id = ?').get(s.id);
+    if (!exists) {
+      db.prepare(
+        'INSERT INTO dashboards (id, name, description, created_at, type, sport) VALUES (?, ?, ?, ?, ?, ?)',
+      ).run(s.id, s.name, s.description, new Date().toISOString(), s.type, s.sport);
+      db.prepare('INSERT INTO config (dashboard_id) VALUES (?)').run(s.id);
+      console.log(`Created sports dashboard: ${s.id}`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Dashboard operations
 // ---------------------------------------------------------------------------
 
-const ROW_DASHBOARD = 'SELECT id, name, description, created_at AS createdAt FROM dashboards';
+const ROW_DASHBOARD =
+  'SELECT id, name, description, created_at AS createdAt, type, sport FROM dashboards';
 
 function getAllDashboards() {
   return db.prepare(ROW_DASHBOARD).all();
@@ -250,30 +304,39 @@ function getDashboard(id) {
   return db.prepare(`${ROW_DASHBOARD} WHERE id = ?`).get(id);
 }
 
-function createDashboard({ id, name, description }) {
+function createDashboard({ id, name, description, type, sport }) {
   const createdAt = new Date().toISOString();
+  const dashType = type || 'default';
+  const dashSport = sport || null;
   const create = db.transaction(() => {
     db.prepare(
-      'INSERT INTO dashboards (id, name, description, created_at) VALUES (?, ?, ?, ?)',
-    ).run(id, name || id, description || '', createdAt);
+      'INSERT INTO dashboards (id, name, description, created_at, type, sport) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(id, name || id, description || '', createdAt, dashType, dashSport);
     db.prepare('INSERT INTO config (dashboard_id) VALUES (?)').run(id);
   });
   create();
-  return { id, name: name || id, description: description || '', createdAt };
+  return {
+    id,
+    name: name || id,
+    description: description || '',
+    createdAt,
+    type: dashType,
+    sport: dashSport,
+  };
 }
 
-function updateDashboard(id, { name, description }) {
+function updateDashboard(id, { name, description, type, sport }) {
   const row = getDashboard(id);
   if (!row) return null;
 
   const newName = name !== undefined ? name : row.name;
   const newDesc = description !== undefined ? description : row.description;
+  const newType = type !== undefined ? type : row.type;
+  const newSport = sport !== undefined ? sport : row.sport;
 
-  db.prepare('UPDATE dashboards SET name = ?, description = ? WHERE id = ?').run(
-    newName,
-    newDesc,
-    id,
-  );
+  db.prepare(
+    'UPDATE dashboards SET name = ?, description = ?, type = ?, sport = ? WHERE id = ?',
+  ).run(newName, newDesc, newType, newSport, id);
   return getDashboard(id);
 }
 
@@ -448,6 +511,12 @@ function updateConfig(dashboardId, updates) {
 // Utility
 // ---------------------------------------------------------------------------
 
+function getSportsDashboards() {
+  return db
+    .prepare("SELECT id, name, type, sport FROM dashboards WHERE type = 'sports' AND sport IS NOT NULL")
+    .all();
+}
+
 function getTickerEnabledDashboards() {
   return db
     .prepare(
@@ -495,6 +564,7 @@ module.exports = {
   deleteContent,
   getConfig,
   updateConfig,
+  getSportsDashboards,
   getTickerEnabledDashboards,
   getMinTickerRefreshInterval,
 };

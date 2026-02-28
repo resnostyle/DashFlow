@@ -4,6 +4,12 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100%;
+    min-width: 100%;
+    height: 100%;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow: hidden;
@@ -14,12 +20,15 @@ body {
 .container {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    min-width: 100%;
     height: 100vh;
-    width: 100vw;
 }
 
 .content-area {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,6 +164,712 @@ body {
     padding: 0 20px;
     color: #666;
     font-weight: bold;
+}
+
+/* Sports dashboard — full-viewport layout for large displays */
+.content-area.sports-active {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+}
+
+.content-area.sports-active {
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.content-area.sports-active .sports-dashboard {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sports-dashboard {
+    width: 100%;
+    max-width: none;
+    padding: 1rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ---- Two-page layout: Duke / ACC ---- */
+.sports-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.sports-page.sports-page-active {
+    position: relative;
+    z-index: 1;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sports-page-duke-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow-y: auto;
+}
+
+/* ---- Duke page: full-width grid ---- */
+.sports-duke-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 1rem 1.5rem;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.sports-duke-hero {
+    grid-column: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+.sports-duke-next {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    background: linear-gradient(135deg, #0a1628 0%, #1a1a1a 100%);
+    border: 1px solid #00539b;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    min-height: 0;
+}
+
+.sports-duke-next-empty {
+    color: #666;
+    font-style: italic;
+}
+
+.sports-duke-stats {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+}
+
+.sports-duke-recent {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.sports-duke-grid .sports-news-slider {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-top: auto;
+}
+
+.sports-duke-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sports-duke-hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sports-duke-name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.sports-duke-rank {
+    font-size: 1.1rem;
+    color: #4a9eff;
+    font-weight: 600;
+}
+
+.sports-duke-record {
+    margin-left: auto;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.sports-duke-stat {
+    font-size: 1.1rem;
+    color: #bbb;
+}
+
+.sports-duke-stat-label {
+    color: #777;
+    margin-right: 0.35rem;
+}
+
+.sports-duke-next-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+}
+
+.sports-duke-next-date {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.sports-duke-next-matchup {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.15rem;
+    margin-bottom: 0.35rem;
+}
+
+.sports-duke-next-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.sports-duke-next-venue,
+.sports-duke-next-broadcast {
+    font-size: 0.95rem;
+    color: #888;
+}
+
+.sports-duke-last {
+    font-size: 1rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.sports-duke-last-label {
+    color: #666;
+    margin-right: 0.25rem;
+}
+
+.sports-duke-upcoming {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.sports-duke-upcoming-game {
+    margin-top: 0.4rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.sports-page-acc-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sports-acc-teams {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    min-height: 0;
+}
+
+.sports-acc-teams .sports-team-card {
+    min-width: 0;
+}
+
+.sports-title {
+    font-size: 1.5rem;
+    text-align: center;
+    color: #fff;
+    margin: 0;
+    padding: 0.25rem 0;
+    white-space: nowrap;
+}
+
+/* ---- Teams row (legacy / ACC page) ---- */
+.sports-teams-grid,
+.sports-acc-teams {
+    min-width: 0;
+}
+
+.sports-team-card {
+    min-width: 0;
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sports-team-primary {
+    border-color: #00539b;
+    background: linear-gradient(135deg, #0a1628 0%, #1a1a1a 100%);
+}
+
+.sports-team-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.sports-team-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sports-team-primary .sports-team-logo {
+    width: 56px;
+    height: 56px;
+}
+
+.sports-team-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.sports-team-name {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sports-team-primary .sports-team-name {
+    font-size: 1.25rem;
+}
+
+.sports-team-rank {
+    font-size: 0.85rem;
+    color: #4a9eff;
+    font-weight: 600;
+}
+
+.sports-team-record {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.sports-team-standing {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+}
+
+.sports-last-game {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.sports-game-matchup {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sports-game-at {
+    color: #666;
+    margin: 0 0.25rem;
+}
+
+.sports-schedule-logo {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sports-result {
+    display: inline-block;
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    margin-right: 0.4em;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.sports-win {
+    background: #1a472a;
+    color: #4ade80;
+}
+
+.sports-loss {
+    background: #4a1a1a;
+    color: #f87171;
+}
+
+.sports-upcoming {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.sports-upcoming-game {
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.sports-upcoming-date {
+    flex: 0 0 auto;
+    min-width: 8rem;
+    color: #777;
+}
+
+/* ---- Duke news slider ---- */
+.sports-news-slider {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #333;
+    min-height: 140px;
+    overflow: hidden;
+}
+
+.sports-news-slider::before {
+    content: 'News';
+    display: block;
+    font-size: 0.85rem;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+}
+
+.sports-news-slider-track {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    animation: sports-news-slide 40s linear infinite;
+}
+
+.sports-news-slider:hover .sports-news-slider-track {
+    animation-play-state: paused;
+}
+
+.sports-news-card {
+    flex: 0 0 320px;
+    min-width: 280px;
+    max-width: 380px;
+    min-height: 100px;
+    display: flex;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #333;
+    overflow: hidden;
+}
+
+.sports-news-card-media {
+    flex: 0 0 120px;
+    min-width: 120px;
+    background: #111;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.sports-news-card-img {
+    width: 100%;
+    height: 100%;
+    min-height: 90px;
+    object-fit: cover;
+}
+
+.sports-news-card-body {
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sports-news-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #eee;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sports-news-card-snippet {
+    font-size: 0.85rem;
+    color: #888;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@keyframes sports-news-slide {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* ---- ACC bottom row: standings + today side by side ---- */
+.sports-acc-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem;
+    min-height: 0;
+    min-width: 0;
+}
+
+.sports-acc-section {
+    background: #111;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.sports-section-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sports-standings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sports-standings-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+.sports-standings-rank {
+    font-weight: 700;
+    min-width: 1.25rem;
+    text-align: center;
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.sports-standings-logo {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sports-standings-team {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.sports-standings-record {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.sports-acc-game {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    background: #1a1a1a;
+    border-radius: 4px;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+}
+
+.sports-acc-away {
+    flex: 1;
+    text-align: right;
+}
+
+.sports-acc-home {
+    flex: 1;
+    text-align: left;
+}
+
+.sports-acc-score {
+    font-weight: 600;
+    min-width: 5rem;
+    text-align: center;
+}
+
+.sports-empty {
+    color: #555;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.sports-loading {
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+    font-size: 1.1rem;
+}
+
+/* ---- Sports responsive ---- */
+
+@media (max-width: 700px) {
+    .sports-duke-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto 1fr auto;
+    }
+    .sports-duke-hero {
+        grid-column: 1;
+    }
+    .sports-duke-next {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    .sports-duke-stats {
+        grid-column: 1;
+    }
+    .sports-duke-recent {
+        grid-column: 1;
+        grid-row: 4;
+    }
+    .sports-duke-grid .sports-news-slider {
+        grid-column: 1;
+        grid-row: 5;
+    }
+}
+
+@media (min-width: 768px) {
+    .sports-duke-logo {
+        width: 100px;
+        height: 100px;
+    }
+    .sports-duke-name {
+        font-size: 2rem;
+    }
+    .sports-duke-record {
+        font-size: 2.5rem;
+    }
+    .sports-duke-stat {
+        font-size: 1.2rem;
+    }
+    .sports-duke-next-date {
+        font-size: 1.35rem;
+    }
+    .sports-duke-next-matchup {
+        font-size: 1.3rem;
+    }
+    .sports-duke-next-logo {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .sports-duke-grid {
+        gap: 1.5rem 2rem;
+    }
+    .sports-duke-logo {
+        width: 120px;
+        height: 120px;
+    }
+    .sports-duke-name {
+        font-size: 2.25rem;
+    }
+    .sports-duke-record {
+        font-size: 3rem;
+    }
+    .sports-duke-stat {
+        font-size: 1.3rem;
+    }
+    .sports-duke-next-date {
+        font-size: 1.5rem;
+    }
+    .sports-duke-next-matchup {
+        font-size: 1.4rem;
+    }
+    .sports-duke-next-logo {
+        width: 48px;
+        height: 48px;
+    }
+    .sports-page-acc-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 1.5rem;
+    }
+    .sports-acc-teams {
+        grid-column: 1;
+        grid-row: 1 / -1;
+    }
+    .sports-acc-row {
+        grid-column: 2;
+        grid-row: 1 / -1;
+        grid-template-rows: 1fr 1fr;
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .sports-dashboard {
+        padding: 0.75rem;
+    }
+    .sports-acc-teams {
+        grid-template-columns: 1fr;
+    }
+    .sports-acc-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 @keyframes scroll {

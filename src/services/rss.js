@@ -1,7 +1,31 @@
 const Parser = require('rss-parser');
 const db = require('../db');
 
-const parser = new Parser();
+const parser = new Parser({
+  customFields: {
+    item: [
+      ['media:thumbnail', 'mediaThumbnail'],
+      ['media:content', 'mediaContent', { keepArray: true }],
+    ],
+  },
+});
+
+function extractImageUrl(item) {
+  if (item.enclosure?.url && /^image\//i.test(item.enclosure.type || '')) {
+    return item.enclosure.url;
+  }
+  const thumb = item.mediaThumbnail;
+  if (thumb?.$?.url) return thumb.$.url;
+  if (typeof thumb === 'string') return thumb;
+  const media = item.mediaContent;
+  if (Array.isArray(media) && media[0]?.$?.url) return media[0].$.url;
+  const content = item.content || item['content:encoded'] || '';
+  if (typeof content === 'string') {
+    const m = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (m) return m[1];
+  }
+  return null;
+}
 
 let io = null;
 let refreshInterval = null;
@@ -50,6 +74,8 @@ async function fetchFeeds(dashboardId) {
           feedName: feed.name || feed.url,
           feedId: feed.id,
           feedLogo: feed.logo || null,
+          image: extractImageUrl(item) || null,
+          contentSnippet: item.contentSnippet || null,
         }));
       }
     } catch (error) {
