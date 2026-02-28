@@ -61,7 +61,13 @@ async function loadDashboards() {
   const list = await api('GET', '/dashboards');
   const select = document.getElementById('dashboardSelect');
   const current = select.value;
-  select.innerHTML = list.map(d => `<option value="${d.id}">${d.name || d.id}</option>`).join('');
+  select.textContent = '';
+  for (const d of list) {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = d.name || d.id;
+    select.appendChild(opt);
+  }
   if (current && list.some(d => d.id === current)) select.value = current;
   else if (list.length) select.value = list[0].id;
   updateViewDashboardLink();
@@ -79,24 +85,36 @@ async function loadDashboards() {
  */
 function renderDashboardsList(list) {
   const el = document.getElementById('dashboardsList');
-  el.innerHTML = list.map(d => {
-    const canDelete = d.id !== 'default';
-    return `
-      <div class="admin-list-item" data-id="${d.id}">
-        <span><strong>${d.name || d.id}</strong> (${d.id})</span>
-        <div class="admin-list-actions">
-          <button type="button" class="btn-edit" data-id="${d.id}">Edit</button>
-          ${canDelete ? `<button type="button" class="btn-delete" data-id="${d.id}">Delete</button>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-  el.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.onclick = () => deleteDashboard(btn.dataset.id);
-  });
-  el.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.onclick = () => editDashboard(btn.dataset.id);
-  });
+  el.textContent = '';
+  for (const d of list) {
+    const item = document.createElement('div');
+    item.className = 'admin-list-item';
+    item.setAttribute('data-id', d.id);
+    const span = document.createElement('span');
+    const strong = document.createElement('strong');
+    strong.textContent = d.name || d.id;
+    span.appendChild(strong);
+    span.appendChild(document.createTextNode(' (' + d.id + ')'));
+    item.appendChild(span);
+    const actions = document.createElement('div');
+    actions.className = 'admin-list-actions';
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = () => editDashboard(d.id);
+    actions.appendChild(editBtn);
+    if (d.id !== 'default') {
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn-delete';
+      delBtn.textContent = 'Delete';
+      delBtn.onclick = () => deleteDashboard(d.id);
+      actions.appendChild(delBtn);
+    }
+    item.appendChild(actions);
+    el.appendChild(item);
+  }
 }
 
 /**
@@ -122,10 +140,7 @@ async function createDashboard(e) {
     await api('POST', '/dashboards', { id, name, description });
     showToast('Dashboard created');
     document.getElementById('createDashboardForm').reset();
-    loadDashboards();
-    loadFeeds();
-    loadContent();
-    loadConfig();
+    await Promise.all([loadDashboards(), loadFeeds(), loadContent(), loadConfig()]);
   } catch (err) {
     showToast(err.message, true);
   }
@@ -141,7 +156,7 @@ async function updateDashboard(id, name, description) {
   try {
     await api('PUT', `/dashboards/${id}`, { name, description });
     showToast('Dashboard updated');
-    loadDashboards();
+    await loadDashboards();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -158,10 +173,7 @@ async function deleteDashboard(id) {
   try {
     await api('DELETE', `/dashboards/${id}`);
     showToast('Dashboard deleted');
-    loadDashboards();
-    loadFeeds();
-    loadContent();
-    loadConfig();
+    await Promise.all([loadDashboards(), loadFeeds(), loadContent(), loadConfig()]);
   } catch (err) {
     showToast(err.message, true);
   }
@@ -205,17 +217,35 @@ async function loadFeeds() {
  */
 function renderFeedsList(list) {
   const el = document.getElementById('feedsList');
-  el.innerHTML = list.length ? list.map(f => `
-    <div class="admin-list-item" data-id="${f.id}">
-      <span><strong>${f.name || 'Unnamed'}</strong> — ${f.url}</span>
-      <div class="admin-list-actions">
-        <button type="button" class="btn-delete" data-id="${f.id}">Delete</button>
-      </div>
-    </div>
-  `).join('') : '<p class="admin-empty">No feeds</p>';
-  el.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.onclick = () => deleteFeed(btn.dataset.id);
-  });
+  el.textContent = '';
+  if (list.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'admin-empty';
+    p.textContent = 'No feeds';
+    el.appendChild(p);
+    return;
+  }
+  for (const f of list) {
+    const item = document.createElement('div');
+    item.className = 'admin-list-item';
+    item.setAttribute('data-id', f.id);
+    const span = document.createElement('span');
+    const strong = document.createElement('strong');
+    strong.textContent = f.name || 'Unnamed';
+    span.appendChild(strong);
+    span.appendChild(document.createTextNode(' — ' + f.url));
+    item.appendChild(span);
+    const actions = document.createElement('div');
+    actions.className = 'admin-list-actions';
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-delete';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = () => deleteFeed(f.id);
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+    el.appendChild(item);
+  }
 }
 
 /**
@@ -242,7 +272,7 @@ async function addFeed(e) {
     await api('POST', `/feeds?dashboard=${getDashboardId()}`, { name, url, logo: logo || undefined });
     showToast('Feed added');
     document.getElementById('addFeedForm').reset();
-    loadFeeds();
+    await loadFeeds();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -258,7 +288,7 @@ async function deleteFeed(id) {
   try {
     await api('DELETE', `/feeds/${id}?dashboard=${getDashboardId()}`);
     showToast('Feed deleted');
-    loadFeeds();
+    await loadFeeds();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -284,17 +314,35 @@ async function loadContent() {
  */
 function renderContentList(list) {
   const el = document.getElementById('contentList');
-  el.innerHTML = list.length ? list.map(c => `
-    <div class="admin-list-item" data-id="${c.id}">
-      <span><strong>${c.title || 'Untitled'}</strong> — ${c.url}</span>
-      <div class="admin-list-actions">
-        <button type="button" class="btn-delete" data-id="${c.id}">Delete</button>
-      </div>
-    </div>
-  `).join('') : '<p class="admin-empty">No content</p>';
-  el.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.onclick = () => deleteContent(btn.dataset.id);
-  });
+  el.textContent = '';
+  if (list.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'admin-empty';
+    p.textContent = 'No content';
+    el.appendChild(p);
+    return;
+  }
+  for (const c of list) {
+    const item = document.createElement('div');
+    item.className = 'admin-list-item';
+    item.setAttribute('data-id', c.id);
+    const span = document.createElement('span');
+    const strong = document.createElement('strong');
+    strong.textContent = c.title || 'Untitled';
+    span.appendChild(strong);
+    span.appendChild(document.createTextNode(' — ' + c.url));
+    item.appendChild(span);
+    const actions = document.createElement('div');
+    actions.className = 'admin-list-actions';
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-delete';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = () => deleteContent(c.id);
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+    el.appendChild(item);
+  }
 }
 
 /**
@@ -324,7 +372,7 @@ async function addContent(e) {
     await api('POST', `/content?dashboard=${getDashboardId()}`, { url, title, type });
     showToast('Content added');
     document.getElementById('addContentForm').reset();
-    loadContent();
+    await loadContent();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -340,7 +388,7 @@ async function deleteContent(id) {
   try {
     await api('DELETE', `/content/${id}?dashboard=${getDashboardId()}`);
     showToast('Content deleted');
-    loadContent();
+    await loadContent();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -384,6 +432,18 @@ async function saveConfig(e) {
   const tickerRefreshInterval = parseInt(document.getElementById('tickerRefreshInterval').value, 10);
   const maxTickerItems = parseInt(document.getElementById('maxTickerItems').value, 10);
   const tickerEnabled = document.getElementById('tickerEnabled').checked;
+  if (!Number.isFinite(rotationInterval)) {
+    showToast('Rotation interval must be a valid number', true);
+    return;
+  }
+  if (!Number.isFinite(tickerRefreshInterval)) {
+    showToast('Ticker refresh must be a valid number', true);
+    return;
+  }
+  if (!Number.isFinite(maxTickerItems)) {
+    showToast('Max ticker items must be a valid number', true);
+    return;
+  }
   if (rotationInterval < 5000) {
     showToast('Rotation interval must be at least 5000ms', true);
     return;
@@ -425,11 +485,13 @@ document.getElementById('addFeedForm').onsubmit = addFeed;
 document.getElementById('addContentForm').onsubmit = addContent;
 document.getElementById('configForm').onsubmit = saveConfig;
 
-document.getElementById('dashboardSelect').onchange = () => {
+document.getElementById('dashboardSelect').onchange = async () => {
   updateViewDashboardLink();
-  loadFeeds();
-  loadContent();
-  loadConfig();
+  try {
+    await Promise.all([loadFeeds(), loadContent(), loadConfig()]);
+  } catch (err) {
+    showToast('Failed to load: ' + err.message, true);
+  }
 };
 
 (async () => {

@@ -20,7 +20,7 @@ app.get('/dashboard/:id', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-// Admin page
+// Admin page (TODO: add authentication/authorization middleware before production use)
 app.get('/admin', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
