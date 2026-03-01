@@ -109,12 +109,31 @@ describe('Config API', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 400 for invalid tickerEnabled type', async () => {
+    it('coerces tickerEnabled string "true" to boolean true', async () => {
       const res = await request(app)
         .post('/api/config')
         .query({ dashboard: 'default' })
-        .send({ tickerEnabled: 'yes' });
+        .send({ tickerEnabled: 'true' });
+      expect(res.status).toBe(200);
+      expect(res.body.tickerEnabled).toBe(true);
+    });
+
+    it('coerces tickerEnabled string "false" to boolean false', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 'false' });
+      expect(res.status).toBe(200);
+      expect(res.body.tickerEnabled).toBe(false);
+    });
+
+    it('returns 400 for invalid tickerEnabled value', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 'off' });
       expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/tickerEnabled/);
     });
 
     it('returns 404 for non-existent dashboard', async () => {

@@ -37,17 +37,18 @@ function formatNextGameDate(dateStr) {
 function renderNewsSlider(newsItems) {
     if (!newsItems?.length) return '';
     const items = newsItems.slice(0, 8).map(item => {
-        const hasImage = !!item.image;
+        const safeImage = typeof safeUrl === 'function' ? safeUrl(item.image) : null;
+        const hasImage = !!safeImage;
         const mediaHtml = hasImage
-            ? `<div class="sports-news-card-media"><img src="${item.image}" alt="" class="sports-news-card-img" loading="lazy" /></div>`
+            ? `<div class="sports-news-card-media"><img src="${escapeHtml(safeImage)}" alt="" class="sports-news-card-img" loading="lazy" /></div>`
             : '';
         const snippet = item.contentSnippet
-            ? `<div class="sports-news-card-snippet">${item.contentSnippet.slice(0, 120)}${item.contentSnippet.length > 120 ? '…' : ''}</div>`
+            ? `<div class="sports-news-card-snippet">${escapeHtml(item.contentSnippet.slice(0, 120))}${item.contentSnippet.length > 120 ? '…' : ''}</div>`
             : '';
         return `<div class="sports-news-card ${hasImage ? 'sports-news-card-has-img' : ''}">
             ${mediaHtml}
             <div class="sports-news-card-body">
-                <div class="sports-news-card-title">${item.title}</div>
+                <div class="sports-news-card-title">${escapeHtml(item.title || '')}</div>
                 ${snippet}
             </div>
         </div>`;
@@ -65,49 +66,59 @@ function renderTeamCard(team, lastGame, upcomingGames) {
         ? [lastGame.home, lastGame.away].find(c => c && String(c.id) === String(team.id))
         : null;
     const won = ourCompetitor?.winner;
+    const awayLogoSafe = lastGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.away.logo) : null);
+    const homeLogoSafe = lastGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.home.logo) : null);
     const lastGameHtml = lastGame
         ? `<div class="sports-last-game">
             ${won !== undefined ? `<span class="sports-result ${won ? 'sports-win' : 'sports-loss'}">${won ? 'W' : 'L'}</span>` : ''}
             <span class="sports-game-matchup">
-                ${lastGame.away?.logo ? `<img src="${lastGame.away.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                ${lastGame.away?.shortName || ''} ${lastGame.away?.score ?? ''}
+                ${awayLogoSafe ? `<img src="${escapeHtml(awayLogoSafe)}" alt="" class="sports-schedule-logo" />` : ''}
+                ${escapeHtml(lastGame.away?.shortName || '')} ${escapeHtml(String(lastGame.away?.score ?? ''))}
             </span>
             <span class="sports-game-at">@</span>
             <span class="sports-game-matchup">
-                ${lastGame.home?.logo ? `<img src="${lastGame.home.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                ${lastGame.home?.shortName || ''} ${lastGame.home?.score ?? ''}
+                ${homeLogoSafe ? `<img src="${escapeHtml(homeLogoSafe)}" alt="" class="sports-schedule-logo" />` : ''}
+                ${escapeHtml(lastGame.home?.shortName || '')} ${escapeHtml(String(lastGame.home?.score ?? ''))}
             </span>
            </div>`
         : '';
     const upcomingHtml = upcomingGames?.length > 0
         ? `<div class="sports-upcoming">
-            ${upcomingGames.slice(0, 2).map(g =>
-                `<div class="sports-upcoming-game">
-                    <span class="sports-upcoming-date">${formatGameDate(g.date)}</span>
+            ${upcomingGames.slice(0, 2).map(g => {
+                const gAwayLogo = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : null);
+                const gHomeLogo = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : null);
+                return `<div class="sports-upcoming-game">
+                    <span class="sports-upcoming-date">${escapeHtml(formatGameDate(g.date))}</span>
                     <span class="sports-game-matchup">
-                        ${g.away?.logo ? `<img src="${g.away.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                        ${g.away?.shortName || 'TBD'}
+                        ${gAwayLogo ? `<img src="${escapeHtml(gAwayLogo)}" alt="" class="sports-schedule-logo" />` : ''}
+                        ${escapeHtml(g.away?.shortName || 'TBD')}
                     </span>
                     <span class="sports-game-at">@</span>
                     <span class="sports-game-matchup">
-                        ${g.home?.logo ? `<img src="${g.home.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                        ${g.home?.shortName || 'TBD'}
+                        ${gHomeLogo ? `<img src="${escapeHtml(gHomeLogo)}" alt="" class="sports-schedule-logo" />` : ''}
+                        ${escapeHtml(g.home?.shortName || 'TBD')}
                     </span>
-                </div>`
-            ).join('')}
+                </div>`;
+            }).join('')}
            </div>`
         : '';
+    const teamLogoSafe = team.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : null);
+    const teamColorHex = team.color && typeof normalizeTeamColor === 'function' ? normalizeTeamColor(team.color) : null;
+    const cardLight = teamColorHex && typeof lightenHex === 'function' ? lightenHex(teamColorHex, 0.5) : null;
+    const cardStyle = teamColorHex
+        ? ` style="--sports-team-card-color: ${escapeHtml(teamColorHex)}${cardLight ? '; --sports-team-card-light: ' + escapeHtml(cardLight) : ''}"`
+        : '';
     return `
-        <div class="sports-team-card">
+        <div class="sports-team-card"${cardStyle}>
             <div class="sports-team-header">
-                ${team.logo ? `<img src="${team.logo}" alt="${team.name}" class="sports-team-logo" />` : ''}
+                ${teamLogoSafe ? `<img src="${escapeHtml(teamLogoSafe)}" alt="${escapeHtml(team.name || '')}" class="sports-team-logo" />` : ''}
                 <div class="sports-team-info">
-                    <span class="sports-team-name">${team.name}</span>
-                    ${rankStr ? `<span class="sports-team-rank">${rankStr}</span>` : ''}
+                    <span class="sports-team-name">${escapeHtml(team.name || '')}</span>
+                    ${rankStr ? `<span class="sports-team-rank">${escapeHtml(rankStr)}</span>` : ''}
                 </div>
             </div>
-            <div class="sports-team-record">${team.record || '-'}</div>
-            <div class="sports-team-standing">${team.standing || ''}</div>
+            <div class="sports-team-record">${escapeHtml(team.record || '-')}</div>
+            <div class="sports-team-standing">${escapeHtml(team.standing || '')}</div>
             ${lastGameHtml}
             ${upcomingHtml}
         </div>
@@ -133,73 +144,80 @@ function renderPrimaryPage(primary, newsItems = []) {
     if (team?.recordHome) statsParts.push({ label: 'Home', value: team.recordHome });
     if (team?.recordAway) statsParts.push({ label: 'Away', value: team.recordAway });
 
+    const primaryAwayLogoSafe = lastGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.away.logo) : null);
+    const primaryHomeLogoSafe = lastGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.home.logo) : null);
     const lastGameHtml = lastGame
-        ? `<div class="sports-duke-last">
-            <span class="sports-duke-last-label">Last:</span>
+        ? `<div class="sports-primary-last">
+            <span class="sports-primary-last-label">Last:</span>
             ${won !== undefined ? `<span class="sports-result ${won ? 'sports-win' : 'sports-loss'}">${won ? 'W' : 'L'}</span>` : ''}
             <span class="sports-game-matchup">
-                ${lastGame.away?.logo ? `<img src="${lastGame.away.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                ${lastGame.away?.shortName || ''} ${lastGame.away?.score ?? ''}
+                ${primaryAwayLogoSafe ? `<img src="${escapeHtml(primaryAwayLogoSafe)}" alt="" class="sports-schedule-logo" />` : ''}
+                ${escapeHtml(lastGame.away?.shortName || '')} ${escapeHtml(String(lastGame.away?.score ?? ''))}
             </span>
             <span class="sports-game-at">@</span>
             <span class="sports-game-matchup">
-                ${lastGame.home?.logo ? `<img src="${lastGame.home.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                ${lastGame.home?.shortName || ''} ${lastGame.home?.score ?? ''}
+                ${primaryHomeLogoSafe ? `<img src="${escapeHtml(primaryHomeLogoSafe)}" alt="" class="sports-schedule-logo" />` : ''}
+                ${escapeHtml(lastGame.home?.shortName || '')} ${escapeHtml(String(lastGame.home?.score ?? ''))}
             </span>
         </div>`
         : '';
 
     const moreUpcoming = upcomingGames.slice(1, 4);
     const upcomingHtml = moreUpcoming.length
-        ? `<div class="sports-duke-upcoming">
-            ${moreUpcoming.map(g =>
-                `<div class="sports-duke-upcoming-game">
-                    <span class="sports-upcoming-date">${formatGameDate(g.date)}</span>
+        ? `<div class="sports-primary-upcoming">
+            ${moreUpcoming.map(g => {
+                const gAwayLogo = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : null);
+                const gHomeLogo = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : null);
+                return `<div class="sports-primary-upcoming-game">
+                    <span class="sports-upcoming-date">${escapeHtml(formatGameDate(g.date))}</span>
                     <span class="sports-game-matchup">
-                        ${g.away?.logo ? `<img src="${g.away.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                        ${g.away?.shortName || 'TBD'}
+                        ${gAwayLogo ? `<img src="${escapeHtml(gAwayLogo)}" alt="" class="sports-schedule-logo" />` : ''}
+                        ${escapeHtml(g.away?.shortName || 'TBD')}
                     </span>
                     <span class="sports-game-at">@</span>
                     <span class="sports-game-matchup">
-                        ${g.home?.logo ? `<img src="${g.home.logo}" alt="" class="sports-schedule-logo" />` : ''}
-                        ${g.home?.shortName || 'TBD'}
+                        ${gHomeLogo ? `<img src="${escapeHtml(gHomeLogo)}" alt="" class="sports-schedule-logo" />` : ''}
+                        ${escapeHtml(g.home?.shortName || 'TBD')}
                     </span>
-                </div>`
-            ).join('')}
+                </div>`;
+            }).join('')}
         </div>`
         : '';
 
     const newsHtml = newsItems?.length ? renderNewsSlider(newsItems) : '';
 
+    const primaryTeamLogoSafe = team?.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : null);
+    const nextAwayLogoSafe = nextGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(nextGame.away.logo) : null);
+    const nextHomeLogoSafe = nextGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(nextGame.home.logo) : null);
     return `
-        <div class="sports-duke-grid">
-            <div class="sports-duke-hero">
-                ${team?.logo ? `<img src="${team.logo}" alt="${team.name}" class="sports-duke-logo" />` : ''}
-                <div class="sports-duke-hero-info">
-                    <h1 class="sports-duke-name">${team?.name || 'Team'}</h1>
-                    ${rankStr ? `<span class="sports-duke-rank">${rankStr}</span>` : ''}
+        <div class="sports-primary-grid">
+            <div class="sports-primary-hero">
+                ${primaryTeamLogoSafe ? `<img src="${escapeHtml(primaryTeamLogoSafe)}" alt="${escapeHtml(team?.name || '')}" class="sports-primary-logo" />` : ''}
+                <div class="sports-primary-hero-info">
+                    <h1 class="sports-primary-name">${escapeHtml(team?.name || 'Team')}</h1>
+                    ${rankStr ? `<span class="sports-primary-rank">${escapeHtml(rankStr)}</span>` : ''}
                 </div>
-                <div class="sports-duke-record">${team?.record || '-'}</div>
+                <div class="sports-primary-record">${escapeHtml(team?.record || '-')}</div>
             </div>
-            <div class="sports-duke-next">
+            <div class="sports-primary-next">
                 ${nextGame ? `
-                <div class="sports-duke-next-label">Next Game</div>
-                <div class="sports-duke-next-date">${formatNextGameDate(nextGame.date)}</div>
-                <div class="sports-duke-next-matchup">
-                    ${nextGame.away?.logo ? `<img src="${nextGame.away.logo}" alt="" class="sports-duke-next-logo" />` : ''}
-                    <span>${nextGame.away?.shortName || 'TBD'}</span>
+                <div class="sports-primary-next-label">Next Game</div>
+                <div class="sports-primary-next-date">${escapeHtml(formatNextGameDate(nextGame.date))}</div>
+                <div class="sports-primary-next-matchup">
+                    ${nextAwayLogoSafe ? `<img src="${escapeHtml(nextAwayLogoSafe)}" alt="" class="sports-primary-next-logo" />` : ''}
+                    <span>${escapeHtml(nextGame.away?.shortName || 'TBD')}</span>
                     <span class="sports-game-at">@</span>
-                    ${nextGame.home?.logo ? `<img src="${nextGame.home.logo}" alt="" class="sports-duke-next-logo" />` : ''}
-                    <span>${nextGame.home?.shortName || 'TBD'}</span>
+                    ${nextHomeLogoSafe ? `<img src="${escapeHtml(nextHomeLogoSafe)}" alt="" class="sports-primary-next-logo" />` : ''}
+                    <span>${escapeHtml(nextGame.home?.shortName || 'TBD')}</span>
                 </div>
-                ${nextGame.venue?.display ? `<div class="sports-duke-next-venue">${nextGame.venue.display}</div>` : ''}
-                ${nextGame.broadcasts?.length ? `<div class="sports-duke-next-broadcast">${nextGame.broadcasts.map(b => `${b.type}: ${b.name}`).join(' · ')}</div>` : ''}
-                ` : '<div class="sports-duke-next-empty">No upcoming games</div>'}
+                ${nextGame.venue?.display ? `<div class="sports-primary-next-venue">${escapeHtml(nextGame.venue.display)}</div>` : ''}
+                ${nextGame.broadcasts?.length ? `<div class="sports-primary-next-broadcast">${escapeHtml(nextGame.broadcasts.map(b => `${b.type}: ${b.name}`).join(' · '))}</div>` : ''}
+                ` : '<div class="sports-primary-next-empty">No upcoming games</div>'}
             </div>
-            <div class="sports-duke-stats">
-                ${statsParts.length ? statsParts.map(s => `<span class="sports-duke-stat"><span class="sports-duke-stat-label">${s.label}</span> ${s.value}</span>`).join('') : ''}
+            <div class="sports-primary-stats">
+                ${statsParts.length ? statsParts.map(s => `<span class="sports-primary-stat"><span class="sports-primary-stat-label">${escapeHtml(s.label)}</span> ${escapeHtml(s.value)}</span>`).join('') : ''}
             </div>
-            <div class="sports-duke-recent">
+            <div class="sports-primary-recent">
                 ${lastGameHtml}
                 ${upcomingHtml}
             </div>
@@ -212,9 +230,9 @@ function renderACCGames(games) {
     if (!games?.length) return '<p class="sports-empty">No ACC games today</p>';
     return games.map(g => `
         <div class="sports-acc-game">
-            <span class="sports-acc-away">${g.away?.shortName || 'TBD'}</span>
-            <span class="sports-acc-score">${g.completed ? `${g.away?.score || '-'} - ${g.home?.score || '-'}` : g.status}</span>
-            <span class="sports-acc-home">${g.home?.shortName || 'TBD'}</span>
+            <span class="sports-acc-away">${escapeHtml(g.away?.shortName || 'TBD')}</span>
+            <span class="sports-acc-score">${escapeHtml(g.completed ? `${g.away?.score || '-'} - ${g.home?.score || '-'}` : (g.status || ''))}</span>
+            <span class="sports-acc-home">${escapeHtml(g.home?.shortName || 'TBD')}</span>
         </div>
     `).join('');
 }
@@ -223,14 +241,17 @@ function renderACCStandings(standings) {
     if (!standings?.length) return '<p class="sports-empty">Standings loading...</p>';
     return `
         <div class="sports-standings">
-            ${standings.map((s, i) => `
+            ${standings.map((s, i) => {
+                const sLogoSafe = s.logo && (typeof safeUrl === 'function' ? safeUrl(s.logo) : null);
+                return `
                 <div class="sports-standings-row">
                     <span class="sports-standings-rank">${i + 1}</span>
-                    ${s.logo ? `<img src="${s.logo}" alt="" class="sports-standings-logo" />` : ''}
-                    <span class="sports-standings-team">${s.shortName || s.team}</span>
-                    <span class="sports-standings-record">${s.record || '-'}</span>
+                    ${sLogoSafe ? `<img src="${escapeHtml(sLogoSafe)}" alt="" class="sports-standings-logo" />` : ''}
+                    <span class="sports-standings-team">${escapeHtml(s.shortName || s.team || '')}</span>
+                    <span class="sports-standings-record">${escapeHtml(s.record || '-')}</span>
                 </div>
-            `).join('')}
+            `;
+            }).join('')}
         </div>
     `;
 }
@@ -244,6 +265,17 @@ function rotateSportsPage() {
     const primaryActive = primaryPage.classList.contains('sports-page-active');
     primaryPage.classList.toggle('sports-page-active', !primaryActive);
     secondaryPage.classList.toggle('sports-page-active', primaryActive);
+}
+
+function applyTeamTheme(dashboardEl, primaryColor) {
+    if (!dashboardEl || !primaryColor) return;
+    const hex = typeof normalizeTeamColor === 'function' ? normalizeTeamColor(primaryColor) : null;
+    if (!hex) return;
+    const dark = typeof darkenHex === 'function' ? darkenHex(hex, 0.15) : '#0a1628';
+    const light = typeof lightenHex === 'function' ? lightenHex(hex, 0.5) : '#4a9eff';
+    dashboardEl.style.setProperty('--sports-team-primary', hex);
+    dashboardEl.style.setProperty('--sports-team-primary-dark', dark);
+    dashboardEl.style.setProperty('--sports-team-primary-light', light);
 }
 
 function renderSportsDashboard(data, sportLabel, newsItems = [], rotationIntervalMs = 30000) {
@@ -262,7 +294,7 @@ function renderSportsDashboard(data, sportLabel, newsItems = [], rotationInterva
     const primaryPageHtml = `
         <div class="sports-page sports-page-primary sports-page-active">
             <h1 class="sports-title">${sportTitle}</h1>
-            <div class="sports-page-duke-content">
+            <div class="sports-page-primary-content">
                 ${renderPrimaryPage(primary, newsItems)}
             </div>
         </div>
@@ -296,6 +328,12 @@ function renderSportsDashboard(data, sportLabel, newsItems = [], rotationInterva
             ${secondaryPageHtml}
         </div>
     `;
+
+    const dashboardEl = container.querySelector('.sports-dashboard');
+    const primaryColor = primary?.team?.color;
+    if (dashboardEl && primaryColor && typeof applyTeamTheme === 'function') {
+        applyTeamTheme(dashboardEl, primaryColor);
+    }
 
     sportsPageRotationInterval = setInterval(rotateSportsPage, intervalMs);
 }

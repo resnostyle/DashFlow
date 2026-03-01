@@ -1,5 +1,6 @@
 const Parser = require('rss-parser');
 const db = require('../db');
+const { validateFetchUrl } = require('../utils/urlValidation');
 
 const parser = new Parser({
   customFields: {
@@ -63,6 +64,13 @@ async function fetchFeeds(dashboardId) {
 
   const allItems = [];
   const feedPromises = feeds.map(async feed => {
+    const urlCheck = validateFetchUrl(feed.url);
+    if (!urlCheck.valid) {
+      console.error(
+        `Skipping feed ${feed.url} for dashboard ${dashboardId}: ${urlCheck.error}`,
+      );
+      return [];
+    }
     try {
       const feedData = await parser.parseURL(feed.url);
       if (feedData?.items) {

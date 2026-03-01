@@ -450,7 +450,9 @@ socket.on('sports:update:ncaa-mens', (data) => {
 ```
 ## Admin UI
 
-The admin UI at `/admin` provides a form-based interface for managing dashboards, feeds, content, and configuration. When `ADMIN_PASSWORD` is set, you must log in at `/admin/login` before accessing the admin page or using the API. The display page (`/dashboard/:id`) and health check (`/health`) remain public.
+The admin UI at `/admin` provides a form-based interface for managing dashboards, feeds, content, and configuration. When `ADMIN_PASSWORD` is set, you must log in at `/admin/login` before accessing the admin page or using the API. Use the "Log out" button to sign out. The display page (`/dashboard/:id`) and health check (`/health`) remain public.
+
+For kiosk or display-only use, add `?kiosk=1` to the dashboard URL to hide the "Manage" link (e.g. `/dashboard/default?kiosk=1`).
 
 ## Usage Examples
 
@@ -654,6 +656,7 @@ news-ticker/
 - `DATA_DIR` - Path to the data directory for the SQLite database (default: `./data`)
 - `ADMIN_PASSWORD` - When set, protects `/admin` and all `/api/*` routes with session-based authentication. Users must log in at `/admin/login` before accessing the admin UI or API.
 - `ADMIN_SESSION_SECRET` - Secret for signing session cookies (required when `ADMIN_PASSWORD` is set in production; defaults to a dev-only value)
+- `CORS_ORIGIN` - Comma-separated list of allowed origins for CORS. If omitted, allows all origins (`*`). Use in production to restrict API access.
 
 ### Building Docker Image
 

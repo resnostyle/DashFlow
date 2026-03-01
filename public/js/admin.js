@@ -33,8 +33,11 @@ function showToast(message, isError = false) {
   }, 4000);
 }
 
+let apiLoading = false;
+
 /**
  * Perform an HTTP request against the configured API base and return the parsed JSON response.
+ * Shows loading state during the request.
  * @param {string} method - HTTP method (e.g., "GET", "POST", "PUT", "DELETE").
  * @param {string} path - Path appended to the API base (should begin with '/').
  * @param {any} [body] - Optional request payload which will be JSON-stringified and sent with a Content-Type of application/json.
@@ -42,15 +45,25 @@ function showToast(message, isError = false) {
  * @throws {Error} When the response has a non-ok HTTP status; the error message is taken from the response `error` field or `HTTP {status}`.
  */
 async function api(method, path, body) {
-  const opts = { method, headers: {} };
-  if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
+  if (apiLoading) {
+    throw new Error('Request in progress');
   }
-  const res = await fetch(API + path, opts);
-  const data = res.ok ? await res.json().catch(() => ({})) : await res.json().catch(() => ({ error: res.statusText }));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
+  apiLoading = true;
+  document.body.classList.add('admin-loading');
+  try {
+    const opts = { method, headers: {} };
+    if (body) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(API + path, opts);
+    const data = res.ok ? await res.json().catch(() => ({})) : await res.json().catch(() => ({ error: res.statusText }));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  } finally {
+    apiLoading = false;
+    document.body.classList.remove('admin-loading');
+  }
 }
 
 /**
@@ -169,13 +182,9 @@ async function createDashboard(e) {
  * @param {string} description - The new description for the dashboard.
  */
 async function updateDashboard(id, name, description) {
-  try {
-    await api('PUT', `/dashboards/${encodeURIComponent(id)}`, { name, description });
-    showToast('Dashboard updated');
-    await loadDashboards();
-  } catch (err) {
-    showToast(err.message, true);
-  }
+  await api('PUT', `/dashboards/${encodeURIComponent(id)}`, { name, description });
+  showToast('Dashboard updated');
+  await loadDashboards();
 }
 
 /**
@@ -196,19 +205,26 @@ async function deleteDashboard(id) {
 }
 
 /**
- * Prompts the user to edit the dashboard's name and description and updates it when confirmed.
- *
- * If the dashboard id is not found or the user cancels either prompt, no action is taken.
+ * Opens the edit dashboard modal for the given dashboard.
  * @param {string} id - The dashboard identifier to edit.
  */
 function editDashboard(id) {
   const d = Array.from(document.querySelectorAll('#dashboardsList .admin-list-item')).find(el => el.dataset.id === id);
   if (!d) return;
-  const name = prompt('Dashboard name:', d.querySelector('strong').textContent);
-  if (name === null) return;
-  const description = prompt('Description:', '');
-  if (description === null) return;
-  updateDashboard(id, name, description);
+  const dashboard = dashboardsList.find(dash => dash.id === id);
+  const name = dashboard?.name || d.querySelector('strong').textContent;
+  const description = dashboard?.description || '';
+  document.getElementById('editDashboardId').value = id;
+  document.getElementById('editDashboardName').value = name;
+  document.getElementById('editDashboardDesc').value = description;
+  document.getElementById('editDashboardModal').hidden = false;
+  const nameInput = document.getElementById('editDashboardName');
+  nameInput.focus();
+  nameInput.select();
+}
+
+function closeEditDashboardModal() {
+  document.getElementById('editDashboardModal').hidden = true;
 }
 
 /**
@@ -297,10 +313,11 @@ async function addFeed(e) {
 /**
  * Remove a feed by its id from the currently selected dashboard.
  *
- * Deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
+ * Prompts for confirmation, then deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
  * @param {string} id - The feed identifier to delete.
  */
 async function deleteFeed(id) {
+  if (!confirm('Delete this feed?')) return;
   try {
     await api('DELETE', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Feed deleted');
@@ -397,10 +414,11 @@ async function addContent(e) {
 /**
  * Delete a content item from the currently selected dashboard.
  *
- * On success, displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
+ * Prompts for confirmation, then on success displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
  * @param {string} id - The ID of the content item to delete.
  */
 async function deleteContent(id) {
+  if (!confirm('Delete this content item?')) return;
   try {
     await api('DELETE', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Content deleted');
@@ -516,6 +534,32 @@ function updateSportsSectionVisibility() {
   const section = document.getElementById('sportsTeamsSection');
   section.hidden = !(dashboard && dashboard.type === 'sports');
 }
+
+// Edit dashboard modal
+document.getElementById('editDashboardForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editDashboardId').value;
+  const name = document.getElementById('editDashboardName').value.trim();
+  const description = document.getElementById('editDashboardDesc').value.trim();
+  if (!name) {
+    showToast('Dashboard name is required', true);
+    return;
+  }
+  try {
+    await updateDashboard(id, name, description);
+    closeEditDashboardModal();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+};
+
+document.getElementById('editDashboardCancel').onclick = closeEditDashboardModal;
+
+document.getElementById('editDashboardModal').onclick = (e) => {
+  if (e.target === document.getElementById('editDashboardModal')) {
+    closeEditDashboardModal();
+  }
+};
 
 // Init
 document.getElementById('createDashboardForm').onsubmit = createDashboard;

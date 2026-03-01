@@ -70,10 +70,15 @@ router.post('/', async (req, res) => {
   }
 
   if (tickerEnabled !== undefined) {
-    if (typeof tickerEnabled !== 'boolean') {
-      errors.push('tickerEnabled must be a boolean');
+    const v = typeof tickerEnabled === 'string' ? tickerEnabled.trim().toLowerCase() : tickerEnabled;
+    if (v === true || v === 'true' || v === 1 || v === '1') {
+      validated.tickerEnabled = true;
+    } else if (v === false || v === 'false' || v === 0 || v === '0') {
+      validated.tickerEnabled = false;
     } else {
-      validated.tickerEnabled = tickerEnabled;
+      errors.push(
+        'tickerEnabled must be a boolean, the string "true"/"false", or numeric 1/0',
+      );
     }
   }
 

@@ -1,3 +1,8 @@
+// utils.js must be loaded before app.js (provides escapeHtml, safeUrl)
+if (typeof safeUrl !== 'function') {
+  throw new Error('utils.js must be loaded before app.js');
+}
+
 // WebSocket connection
 const socket = io();
 
@@ -10,6 +15,12 @@ function getDashboardIdFromUrl() {
 
 // State
 const dashboardId = getDashboardIdFromUrl();
+
+// Kiosk mode: hide Manage link when ?kiosk=1
+if (new URLSearchParams(window.location.search).get('kiosk') === '1') {
+    const manageLink = document.getElementById('manageLink');
+    if (manageLink) manageLink.style.display = 'none';
+}
 let currentContentIndex = 0;
 let contentItems = [];
 let tickerItems = [];
@@ -84,12 +95,15 @@ function createContentElement(item) {
             iframe.allowFullscreen = true;
             div.appendChild(iframe);
         } else {
-            div.innerHTML = `<p>Invalid YouTube URL: ${item.url}</p>`;
+            const p = document.createElement('p');
+            p.textContent = `Invalid YouTube URL: ${item.url || ''}`;
+            div.appendChild(p);
         }
     } else {
-        // Regular webpage iframe
+        // Regular webpage iframe - use safeUrl to prevent XSS
+        const safe = typeof safeUrl === 'function' ? safeUrl(item.url) : (item.url || '');
         const iframe = document.createElement('iframe');
-        iframe.src = item.url;
+        iframe.src = safe || 'about:blank';
         iframe.allowFullscreen = true;
         div.appendChild(iframe);
     }
@@ -187,12 +201,14 @@ function updateTicker() {
         return;
     }
     
-    // Create ticker items HTML
+    // Create ticker items HTML - escape user/RSS content to prevent XSS
     const itemsHTML = tickerItems.map((item, index) => {
-        const link = item.link ? `<a href="${item.link}" target="_blank" rel="noopener">${item.title}</a>` : item.title;
-        const logo = item.feedLogo ? `<img src="${item.feedLogo}" alt="${item.feedName}" class="ticker-logo" />` : '';
+        const safeLink = safeUrl(item.link);
+        const safeLogo = safeUrl(item.feedLogo);
+        const link = safeLink ? `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener">${escapeHtml(item.title || '')}</a>` : escapeHtml(item.title || '');
+        const logo = safeLogo ? `<img src="${escapeHtml(safeLogo)}" alt="${escapeHtml(item.feedName || '')}" class="ticker-logo" />` : '';
         const separator = index < tickerItems.length - 1 ? '<span class="ticker-separator">•</span>' : '';
-        return `<span class="ticker-item" data-feed-id="${item.feedId || ''}">${logo}${link}</span>${separator}`;
+        return `<span class="ticker-item" data-feed-id="${escapeHtml(String(item.feedId || ''))}">${logo}${link}</span>${separator}`;
     }).join('');
     
     // Duplicate content for seamless loop
