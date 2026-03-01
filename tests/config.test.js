@@ -18,6 +18,16 @@ describe('Config API', () => {
         tickerEnabled: true,
       });
     });
+
+    it('returns default primaryTeamId and secondaryTeamIds for sports dashboard', async () => {
+      const res = await request(app)
+        .get('/api/config')
+        .query({ dashboard: 'ncaa-mens' });
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('primaryTeamId', 150);
+      expect(res.body).toHaveProperty('secondaryTeamIds');
+      expect(res.body.secondaryTeamIds).toEqual([153, 152]);
+    });
   });
 
   describe('POST /api/config', () => {
@@ -113,6 +123,50 @@ describe('Config API', () => {
         .query({ dashboard: 'nonexistent' })
         .send({ rotationInterval: 10000 });
       expect(res.status).toBe(404);
+    });
+
+    it('updates primaryTeamId for sports dashboard', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'ncaa-mens' })
+        .send({ primaryTeamId: 151 });
+      expect(res.status).toBe(200);
+      expect(res.body.primaryTeamId).toBe(151);
+
+      const getRes = await request(app)
+        .get('/api/config')
+        .query({ dashboard: 'ncaa-mens' });
+      expect(getRes.body.primaryTeamId).toBe(151);
+    });
+
+    it('updates secondaryTeamIds for sports dashboard', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'ncaa-mens' })
+        .send({ secondaryTeamIds: [152, 154] });
+      expect(res.status).toBe(200);
+      expect(res.body.secondaryTeamIds).toEqual([152, 154]);
+
+      const getRes = await request(app)
+        .get('/api/config')
+        .query({ dashboard: 'ncaa-mens' });
+      expect(getRes.body.secondaryTeamIds).toEqual([152, 154]);
+    });
+
+    it('returns 400 for invalid primaryTeamId', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'ncaa-mens' })
+        .send({ primaryTeamId: 'not-a-number' });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 for invalid secondaryTeamIds', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'ncaa-mens' })
+        .send({ secondaryTeamIds: [] });
+      expect(res.status).toBe(400);
     });
   });
 });

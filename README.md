@@ -168,7 +168,7 @@ Response:
 ```json
 {
   "sport": "mens",
-  "duke": {
+  "primary": {
     "team": {
       "id": "150",
       "name": "Duke Blue Devils",
@@ -177,25 +177,19 @@ Response:
       "standing": "1st in ACC",
       "rank": 3
     },
-    "lastGame": {
-      "id": "401825518",
-      "name": "Duke Blue Devils at Virginia Cavaliers",
-      "date": "2026-02-14T00:00Z",
-      "status": "Final",
-      "completed": true,
-      "home": { "id": "258", "shortName": "Virginia", "score": "65" },
-      "away": { "id": "150", "shortName": "Duke", "score": "78" }
-    },
-    "upcomingGames": []
+    "lastGame": { "id": "...", "home": {...}, "away": {...} },
+    "upcomingGames": [],
+    "nextGame": { "date": "...", "venue": {...}, "broadcasts": [...] }
   },
-  "unc": { "team": { "...": "..." }, "lastGame": null, "upcomingGames": [] },
-  "ncState": { "team": { "...": "..." }, "lastGame": null, "upcomingGames": [] },
-  "acc": {
-    "standings": [],
-    "todayGames": []
-  }
+  "secondary": [
+    { "team": {...}, "lastGame": null, "upcomingGames": [] },
+    { "team": {...}, "lastGame": null, "upcomingGames": [] }
+  ],
+  "acc": { "standings": [], "todayGames": [] }
 }
 ```
+
+Team IDs are configured per dashboard via `primaryTeamId` and `secondaryTeamIds` in config (default: 150, [153, 152]).
 
 Data is fetched from the ESPN public API and cached for 5 minutes. Sports dashboards are also refreshed automatically every 5 minutes and pushed to connected clients via WebSocket.
 
@@ -368,7 +362,9 @@ Content-Type: application/json
 ```
 
 Configuration options:
-- `rotationInterval` - Content rotation interval in milliseconds (minimum: 5000ms). For sports dashboards, this controls the interval between Duke and ACC page views.
+- `rotationInterval` - Content rotation interval in milliseconds (minimum: 5000ms). For sports dashboards, this controls the interval between primary team and conference page views.
+- `primaryTeamId` - ESPN team ID for the key/primary team (sports dashboards only). Default: 150 (Duke).
+- `secondaryTeamIds` - Array of 1-2 ESPN team IDs for secondary teams. Default: [153, 152] (UNC, NC State).
 - `tickerRefreshInterval` - RSS feed refresh interval in milliseconds (minimum: 60000ms)
 - `maxTickerItems` - Maximum number of ticker items to display (range: 10-200)
 - `tickerEnabled` - Enable/disable RSS ticker for this dashboard (default: `true`). When `false`, no RSS feeds are fetched and the ticker is hidden.

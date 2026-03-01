@@ -238,3 +238,30 @@ body {
   font-size: 0.9rem;
   font-style: italic;
 }
+
+.config-subsection {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #333;
+}
+
+.config-subsection-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #ccc;
+}
+
+.config-help {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.config-help code {
+  background: #222;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.8em;
+}

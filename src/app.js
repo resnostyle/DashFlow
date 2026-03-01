@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const db = require('./db');
 
 const { ensureAuthenticated } = require('./middleware/auth');
 
@@ -29,6 +30,7 @@ app.use(cookieParser());
 app.use(
   session({
     secret: sessionSecret,
+    store: db.createSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {

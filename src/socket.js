@@ -7,7 +7,12 @@ async function emitSportsData(io, dashboardId) {
   if (!dashboard || dashboard.type !== 'sports' || !dashboard.sport) return;
 
   try {
-    const data = await espn.getNCAAData(dashboard.sport);
+    const config = db.getConfig(dashboardId);
+    const teamIds = {
+      primaryTeamId: config.primaryTeamId,
+      secondaryTeamIds: config.secondaryTeamIds,
+    };
+    const data = await espn.getNCAAData(dashboard.sport, teamIds);
     io.to(`dashboard:${dashboardId}`).emit(`sports:update:${dashboardId}`, data);
   } catch (err) {
     console.error(`Error fetching sports data for ${dashboardId}:`, err.message);

@@ -16,11 +16,31 @@ router.post('/', async (req, res) => {
     return res.status(404).json({ error: 'Dashboard not found' });
   }
 
-  const { rotationInterval, tickerRefreshInterval, maxTickerItems, tickerEnabled } = req.body;
+  const { rotationInterval, tickerRefreshInterval, maxTickerItems, tickerEnabled, primaryTeamId, secondaryTeamIds } =
+    req.body;
 
   // Validate and coerce incoming fields
   const validated = {};
   const errors = [];
+
+  if (primaryTeamId !== undefined) {
+    const v = parseInt(primaryTeamId, 10);
+    if (!Number.isInteger(v) || v <= 0) {
+      errors.push('primaryTeamId must be a positive integer (ESPN team ID)');
+    } else {
+      validated.primaryTeamId = v;
+    }
+  }
+
+  if (secondaryTeamIds !== undefined) {
+    const arr = Array.isArray(secondaryTeamIds) ? secondaryTeamIds : [secondaryTeamIds];
+    const ids = arr.slice(0, 2).map(n => parseInt(n, 10)).filter(n => Number.isInteger(n) && n > 0);
+    if (ids.length === 0) {
+      errors.push('secondaryTeamIds must be an array of 1-2 positive integers (ESPN team IDs)');
+    } else {
+      validated.secondaryTeamIds = ids;
+    }
+  }
 
   if (rotationInterval !== undefined) {
     const v = Number(rotationInterval);
