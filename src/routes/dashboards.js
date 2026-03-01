@@ -9,7 +9,7 @@ router.get('/', (_req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { id, name, description } = req.body;
+  const { id, name, description, type, sport } = req.body;
 
   if (!id) {
     return res.status(400).json({ error: 'Dashboard ID is required' });
@@ -22,11 +22,16 @@ router.post('/', (req, res) => {
           'Invalid dashboard ID format. Use only letters, numbers, dashes, and underscores.',
       });
   }
+  if (type === 'sports' && !['mens', 'womens'].includes(sport)) {
+    return res
+      .status(400)
+      .json({ error: 'Sport must be "mens" or "womens" when type is "sports"' });
+  }
   if (db.getDashboard(id)) {
     return res.status(409).json({ error: 'Dashboard with this ID already exists' });
   }
 
-  const dashboard = db.createDashboard({ id, name, description });
+  const dashboard = db.createDashboard({ id, name, description, type, sport });
   res.status(201).json(dashboard);
 });
 
@@ -39,8 +44,8 @@ router.get('/:id', (req, res) => {
 });
 
 router.put('/:id', (req, res) => {
-  const { name, description } = req.body;
-  const dashboard = db.updateDashboard(req.params.id, { name, description });
+  const { name, description, type, sport } = req.body;
+  const dashboard = db.updateDashboard(req.params.id, { name, description, type, sport });
   if (!dashboard) {
     return res.status(404).json({ error: 'Dashboard not found' });
   }

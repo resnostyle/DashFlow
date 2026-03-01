@@ -39,6 +39,20 @@
                     <label for="dashboardDesc">Description</label>
                     <input type="text" id="dashboardDesc" name="description" placeholder="Optional description">
                 </div>
+                <div class="form-row">
+                    <label for="dashboardType">Type</label>
+                    <select id="dashboardType" name="type">
+                        <option value="default">Default (news/content)</option>
+                        <option value="sports">Sports</option>
+                    </select>
+                </div>
+                <div class="form-row" id="dashboardSportRow" hidden>
+                    <label for="dashboardSport">Sport</label>
+                    <select id="dashboardSport" name="sport">
+                        <option value="mens">Men's</option>
+                        <option value="womens">Women's</option>
+                    </select>
+                </div>
                 <button type="submit">Create</button>
             </form>
             <div id="dashboardsList" class="admin-list"></div>
@@ -105,6 +119,18 @@
                 <div class="form-row checkbox-row">
                     <label for="tickerEnabled">Ticker enabled</label>
                     <input type="checkbox" id="tickerEnabled" name="tickerEnabled" checked>
+                </div>
+                <div id="sportsTeamsSection" class="config-subsection" hidden>
+                    <h3 class="config-subsection-title">Sports teams</h3>
+                    <p class="config-help">Configure which teams appear on sports dashboards. Page 1 shows the primary team; page 2 shows the secondary teams and ACC. Find ESPN team IDs in team URLs (e.g. <code>espn.com/.../id/150</code>).</p>
+                    <div class="form-row">
+                        <label for="primaryTeamId">Primary team ID</label>
+                        <input type="number" id="primaryTeamId" name="primaryTeamId" min="1" placeholder="150">
+                    </div>
+                    <div class="form-row">
+                        <label for="secondaryTeamIds">Secondary team IDs (comma-separated, up to 2)</label>
+                        <input type="text" id="secondaryTeamIds" name="secondaryTeamIds" placeholder="153, 152">
+                    </div>
                 </div>
                 <button type="submit">Save config</button>
             </form>

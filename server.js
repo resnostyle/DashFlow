@@ -6,6 +6,7 @@ const rss = require('./src/services/rss');
 const socket = require('./src/socket');
 
 const PORT = process.env.PORT || 3000;
+const SPORTS_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 
 // Initialize database (creates tables, migrates JSON data if needed)
 db.initialize();
@@ -32,6 +33,21 @@ rss.fetchAllFeeds().catch(err => {
   rss.startRefreshLoop();
 });
 
+// Sports data refresh loop
+let sportsRefreshInterval = null;
+function refreshSportsData() {
+  const sportsDashboards = db.getSportsDashboards();
+  for (const d of sportsDashboards) {
+    socket.emitSportsData(io, d.id);
+  }
+}
+function startSportsRefreshLoop() {
+  if (sportsRefreshInterval) clearInterval(sportsRefreshInterval);
+  refreshSportsData();
+  sportsRefreshInterval = setInterval(refreshSportsData, SPORTS_REFRESH_MS);
+}
+startSportsRefreshLoop();
+
 // Start listening
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -42,6 +58,7 @@ server.listen(PORT, () => {
 function shutdown() {
   console.log('Shutting down...');
   rss.stopRefreshLoop();
+  if (sportsRefreshInterval) clearInterval(sportsRefreshInterval);
   server.close(() => {
     db.close();
     process.exit(0);

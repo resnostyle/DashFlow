@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const db = require('./db');
 
 const { ensureAuthenticated } = require('./middleware/auth');
 
@@ -29,6 +30,7 @@ app.use(cookieParser());
 app.use(
   session({
     secret: sessionSecret,
+    store: db.createSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -92,8 +94,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes (protected when ADMIN_PASSWORD is set)
+// API routes (protected when ADMIN_PASSWORD is set; ensureAuthenticated passes through when it is not)
 app.use('/api/dashboards', ensureAuthenticated, require('./routes/dashboards'));
+app.use('/api/sports', ensureAuthenticated, require('./routes/sports'));
 app.use('/api/feeds', ensureAuthenticated, require('./routes/feeds'));
 app.use('/api/content', ensureAuthenticated, require('./routes/content'));
 app.use('/api/config', ensureAuthenticated, require('./routes/config'));

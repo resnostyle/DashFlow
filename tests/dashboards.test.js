@@ -12,6 +12,15 @@ describe('Dashboards API', () => {
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.some((d) => d.id === 'default')).toBe(true);
     });
+
+    it('returns dashboards with type and sport', async () => {
+      const res = await request(app).get('/api/dashboards');
+      expect(res.status).toBe(200);
+      const sportsDash = res.body.find((d) => d.id === 'ncaa-mens');
+      expect(sportsDash).toBeTruthy();
+      expect(sportsDash.type).toBe('sports');
+      expect(sportsDash.sport).toBe('mens');
+    });
   });
 
   describe('POST /api/dashboards', () => {
@@ -50,6 +59,38 @@ describe('Dashboards API', () => {
         .send({ id: 'default' });
       expect(res.status).toBe(409);
     });
+
+    it('creates a sports dashboard with type and sport', async () => {
+      const res = await request(app)
+        .post('/api/dashboards')
+        .send({
+          id: 'sports-test',
+          name: 'Sports Test',
+          description: 'Test sports dashboard',
+          type: 'sports',
+          sport: 'womens',
+        });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({
+        id: 'sports-test',
+        name: 'Sports Test',
+        type: 'sports',
+        sport: 'womens',
+      });
+    });
+
+    it('returns 400 when type is sports but sport is invalid', async () => {
+      const res = await request(app)
+        .post('/api/dashboards')
+        .send({
+          id: 'invalid-sport',
+          name: 'Invalid',
+          type: 'sports',
+          sport: 'invalid',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Sport must be/);
+    });
   });
 
   describe('GET /api/dashboards/:id', () => {
@@ -63,6 +104,13 @@ describe('Dashboards API', () => {
     it('returns 404 for non-existent dashboard', async () => {
       const res = await request(app).get('/api/dashboards/nonexistent');
       expect(res.status).toBe(404);
+    });
+
+    it('returns dashboard with type and sport', async () => {
+      const res = await request(app).get('/api/dashboards/ncaa-mens');
+      expect(res.status).toBe(200);
+      expect(res.body.type).toBe('sports');
+      expect(res.body.sport).toBe('mens');
     });
   });
 
@@ -85,6 +133,19 @@ describe('Dashboards API', () => {
         .put('/api/dashboards/nonexistent')
         .send({ name: 'X' });
       expect(res.status).toBe(404);
+    });
+
+    it('updates dashboard type and sport', async () => {
+      await request(app)
+        .post('/api/dashboards')
+        .send({ id: 'type-update-test', name: 'Type Test', type: 'default' });
+
+      const res = await request(app)
+        .put('/api/dashboards/type-update-test')
+        .send({ type: 'sports', sport: 'womens' });
+      expect(res.status).toBe(200);
+      expect(res.body.type).toBe('sports');
+      expect(res.body.sport).toBe('womens');
     });
   });
 

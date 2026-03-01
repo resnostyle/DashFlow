@@ -23,6 +23,22 @@ describe('Database layer', () => {
       expect(fetched.name).toBe('DB Test');
     });
 
+    it('creates a sports dashboard with type and sport', () => {
+      const created = db.createDashboard({
+        id: 'db-sports-test',
+        name: 'Sports DB Test',
+        description: 'sports',
+        type: 'sports',
+        sport: 'mens',
+      });
+      expect(created.type).toBe('sports');
+      expect(created.sport).toBe('mens');
+
+      const fetched = db.getDashboard('db-sports-test');
+      expect(fetched.type).toBe('sports');
+      expect(fetched.sport).toBe('mens');
+    });
+
     it('updates a dashboard', () => {
       db.createDashboard({ id: 'db-update', name: 'Before' });
       const updated = db.updateDashboard('db-update', { name: 'After' });
@@ -100,6 +116,87 @@ describe('Database layer', () => {
 
     it('returns null when updating config for non-existent dashboard', () => {
       expect(db.updateConfig('nope', { rotationInterval: 5000 })).toBeNull();
+    });
+
+    it('returns and updates primaryTeamId and secondaryTeamIds', () => {
+      const config = db.getConfig('ncaa-mens');
+      expect(config.primaryTeamId).toBe(150);
+      expect(config.secondaryTeamIds).toEqual([153, 152]);
+
+      const updated = db.updateConfig('ncaa-mens', {
+        primaryTeamId: 200,
+        secondaryTeamIds: [201, 202],
+      });
+      expect(updated.primaryTeamId).toBe(200);
+      expect(updated.secondaryTeamIds).toEqual([201, 202]);
+
+      const refetched = db.getConfig('ncaa-mens');
+      expect(refetched.primaryTeamId).toBe(200);
+      expect(refetched.secondaryTeamIds).toEqual([201, 202]);
+    });
+  });
+
+  describe('session store', () => {
+    it('createSessionStore returns a store with get, set, destroy', () => {
+      const store = db.createSessionStore();
+      expect(store).toHaveProperty('get');
+      expect(store).toHaveProperty('set');
+      expect(store).toHaveProperty('destroy');
+      expect(typeof store.get).toBe('function');
+      expect(typeof store.set).toBe('function');
+      expect(typeof store.destroy).toBe('function');
+    });
+
+    it('session store persists and retrieves sessions', async () => {
+      const store = db.createSessionStore();
+      const sid = 'test-session-' + Date.now();
+      const sess = { cookie: {}, authenticated: true, role: 'admin' };
+
+      await new Promise((resolve, reject) => {
+        store.set(sid, sess, (err) => (err ? reject(err) : resolve()));
+      });
+      const retrieved = await new Promise((resolve, reject) => {
+        store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+      });
+      expect(retrieved).toBeTruthy();
+      expect(retrieved.authenticated).toBe(true);
+
+      await new Promise((resolve, reject) => {
+        store.destroy(sid, (err) => (err ? reject(err) : resolve()));
+      });
+      const afterDestroy = await new Promise((resolve, reject) => {
+        store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+      });
+      expect(afterDestroy).toBeNull();
+    });
+
+    it('session store does not return expired sessions', async () => {
+      const store = db.createSessionStore();
+      const sid = 'expired-session-' + Date.now();
+      const pastExpire = Math.floor(Date.now() / 1000) - 3600;
+      const rawDb = db.getRawDb();
+      rawDb.prepare('INSERT INTO sessions (sid, sess, expire) VALUES (?, ?, ?)').run(
+        sid,
+        JSON.stringify({ cookie: {}, expired: true }),
+        pastExpire,
+      );
+      const retrieved = await new Promise((resolve, reject) => {
+        store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+      });
+      expect(retrieved).toBeNull();
+    });
+  });
+
+  describe('getSportsDashboards', () => {
+    it('returns dashboards with type sports and non-null sport', () => {
+      const sports = db.getSportsDashboards();
+      expect(Array.isArray(sports)).toBe(true);
+      expect(sports.some((d) => d.id === 'ncaa-mens')).toBe(true);
+      expect(sports.some((d) => d.id === 'ncaa-womens')).toBe(true);
+      sports.forEach((d) => {
+        expect(d.type).toBe('sports');
+        expect(d.sport).toBeTruthy();
+      });
     });
   });
 });

@@ -2,6 +2,9 @@
 
 const API = '/api';
 
+/** @type {Array<{id: string, name?: string, type?: string, sport?: string}>} */
+let dashboardsList = [];
+
 /**
  * Get the currently selected dashboard id from the dashboard select element.
  * @returns {string} The selected dashboard id, or `'default'` if no value is set.
@@ -59,6 +62,7 @@ async function api(method, path, body) {
  */
 async function loadDashboards() {
   const list = await api('GET', '/dashboards');
+  dashboardsList = list;
   const select = document.getElementById('dashboardSelect');
   const current = select.value;
   select.textContent = '';
@@ -80,6 +84,7 @@ async function loadDashboards() {
     else select.value = list[0].id;
   }
   updateViewDashboardLink();
+  updateSportsSectionVisibility();
   renderDashboardsList(list);
 }
 
@@ -137,6 +142,8 @@ async function createDashboard(e) {
   const id = document.getElementById('dashboardId').value.trim();
   const name = document.getElementById('dashboardName').value.trim();
   const description = document.getElementById('dashboardDesc').value.trim();
+  const type = document.getElementById('dashboardType').value;
+  const sport = type === 'sports' ? document.getElementById('dashboardSport').value : undefined;
   if (!id) {
     showToast('Dashboard ID is required', true);
     return;
@@ -146,7 +153,7 @@ async function createDashboard(e) {
     return;
   }
   try {
-    await api('POST', '/dashboards', { id, name, description });
+    await api('POST', '/dashboards', { id, name, description, type, sport });
     showToast('Dashboard created');
     document.getElementById('createDashboardForm').reset();
     await Promise.all([loadDashboards(), loadFeeds(), loadContent(), loadConfig()]);
@@ -419,6 +426,10 @@ async function loadConfig() {
   document.getElementById('tickerRefreshInterval').value = cfg.tickerRefreshInterval ?? 300000;
   document.getElementById('maxTickerItems').value = cfg.maxTickerItems ?? 50;
   document.getElementById('tickerEnabled').checked = cfg.tickerEnabled !== false;
+  document.getElementById('primaryTeamId').value = cfg.primaryTeamId ?? '';
+  document.getElementById('secondaryTeamIds').value = Array.isArray(cfg.secondaryTeamIds)
+    ? cfg.secondaryTeamIds.join(', ')
+    : (cfg.secondaryTeamIds ?? '');
 }
 
 /**
@@ -441,6 +452,11 @@ async function saveConfig(e) {
   const tickerRefreshInterval = parseInt(document.getElementById('tickerRefreshInterval').value, 10);
   const maxTickerItems = parseInt(document.getElementById('maxTickerItems').value, 10);
   const tickerEnabled = document.getElementById('tickerEnabled').checked;
+  const primaryTeamId = document.getElementById('primaryTeamId').value.trim();
+  const secondaryTeamIdsRaw = document.getElementById('secondaryTeamIds').value.trim();
+  const secondaryTeamIds = secondaryTeamIdsRaw
+    ? secondaryTeamIdsRaw.split(/[,\s]+/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0)
+    : undefined;
   if (!Number.isFinite(rotationInterval)) {
     showToast('Rotation interval must be a valid number', true);
     return;
@@ -465,13 +481,16 @@ async function saveConfig(e) {
     showToast('Max ticker items must be between 10 and 200', true);
     return;
   }
+  const body = {
+    rotationInterval,
+    tickerRefreshInterval,
+    maxTickerItems,
+    tickerEnabled
+  };
+  if (primaryTeamId) body.primaryTeamId = parseInt(primaryTeamId, 10);
+  if (secondaryTeamIds?.length) body.secondaryTeamIds = secondaryTeamIds.slice(0, 2);
   try {
-    await api('POST', `/config?dashboard=${encodeURIComponent(getDashboardId())}`, {
-      rotationInterval,
-      tickerRefreshInterval,
-      maxTickerItems,
-      tickerEnabled
-    });
+    await api('POST', `/config?dashboard=${encodeURIComponent(getDashboardId())}`, body);
     showToast('Config saved');
   } catch (err) {
     showToast(err.message, true);
@@ -488,6 +507,16 @@ function updateViewDashboardLink() {
   link.href = '/dashboard/' + encodeURIComponent(getDashboardId());
 }
 
+/**
+ * Show or hide the sports teams config section based on whether the selected dashboard is a sports dashboard.
+ */
+function updateSportsSectionVisibility() {
+  const dashboardId = getDashboardId();
+  const dashboard = dashboardsList.find(d => d.id === dashboardId);
+  const section = document.getElementById('sportsTeamsSection');
+  section.hidden = !(dashboard && dashboard.type === 'sports');
+}
+
 // Init
 document.getElementById('createDashboardForm').onsubmit = createDashboard;
 document.getElementById('addFeedForm').onsubmit = addFeed;
@@ -496,11 +525,17 @@ document.getElementById('configForm').onsubmit = saveConfig;
 
 document.getElementById('dashboardSelect').onchange = async () => {
   updateViewDashboardLink();
+  updateSportsSectionVisibility();
   try {
     await Promise.all([loadFeeds(), loadContent(), loadConfig()]);
   } catch (err) {
     showToast('Failed to load: ' + err.message, true);
   }
+};
+
+document.getElementById('dashboardType').onchange = () => {
+  const type = document.getElementById('dashboardType').value;
+  document.getElementById('dashboardSportRow').hidden = type !== 'sports';
 };
 
 (async () => {
