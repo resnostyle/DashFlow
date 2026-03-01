@@ -1,12 +1,15 @@
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./src/app');
 const db = require('./src/db');
 const rss = require('./src/services/rss');
 const socket = require('./src/socket');
+const sportsRefresh = require('./src/services/sports-refresh');
 
 const PORT = process.env.PORT || 3000;
-const SPORTS_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DB_PATH = path.join(DATA_DIR, 'news-ticker.db');
 
 // Initialize database (creates tables, migrates JSON data if needed)
 db.initialize();
@@ -25,6 +28,7 @@ app.set('io', io);
 // Wire up services
 rss.init(io);
 socket.setup(io);
+sportsRefresh.start(io);
 
 // Initial RSS fetch then start periodic refresh
 rss.fetchAllFeeds().catch(err => {
@@ -33,32 +37,17 @@ rss.fetchAllFeeds().catch(err => {
   rss.startRefreshLoop();
 });
 
-// Sports data refresh loop
-let sportsRefreshInterval = null;
-function refreshSportsData() {
-  const sportsDashboards = db.getSportsDashboards();
-  for (const d of sportsDashboards) {
-    socket.emitSportsData(io, d.id);
-  }
-}
-function startSportsRefreshLoop() {
-  if (sportsRefreshInterval) clearInterval(sportsRefreshInterval);
-  refreshSportsData();
-  sportsRefreshInterval = setInterval(refreshSportsData, SPORTS_REFRESH_MS);
-}
-startSportsRefreshLoop();
-
 // Start listening
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Database: data/news-ticker.db`);
+  console.log(`Database: ${DB_PATH}`);
 });
 
 // Graceful shutdown
 function shutdown() {
   console.log('Shutting down...');
   rss.stopRefreshLoop();
-  if (sportsRefreshInterval) clearInterval(sportsRefreshInterval);
+  sportsRefresh.stop();
   server.close(() => {
     db.close();
     process.exit(0);

@@ -11,7 +11,10 @@
     <div class="admin-container">
         <header class="admin-header">
             <h1>News Ticker Admin</h1>
-            <a href="/dashboard/default" class="admin-link">View Display</a>
+            <a id="viewDisplayLink" href="/dashboard/default" class="admin-link">View Display</a>
+            <form method="post" action="/admin/logout" style="display:inline;">
+                <button type="submit" class="admin-link admin-logout-btn">Log out</button>
+            </form>
         </header>
 
         <div id="toast" class="toast" aria-live="polite"></div>
@@ -135,6 +138,28 @@
                 <button type="submit">Save config</button>
             </form>
         </section>
+    </div>
+
+    <!-- Edit dashboard modal -->
+    <div id="editDashboardModal" class="admin-modal" hidden>
+        <div class="admin-modal-content">
+            <h3>Edit dashboard</h3>
+            <form id="editDashboardForm">
+                <input type="hidden" id="editDashboardId" name="id">
+                <div class="form-row">
+                    <label for="editDashboardName">Name</label>
+                    <input type="text" id="editDashboardName" name="name" required>
+                </div>
+                <div class="form-row">
+                    <label for="editDashboardDesc">Description</label>
+                    <input type="text" id="editDashboardDesc" name="description">
+                </div>
+                <div class="admin-modal-actions">
+                    <button type="button" id="editDashboardCancel" class="btn-cancel">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="/js/admin.js"></script>
