@@ -70,13 +70,16 @@ router.post('/', async (req, res) => {
   }
 
   if (tickerEnabled !== undefined) {
-    validated.tickerEnabled =
-      tickerEnabled === false ||
-      tickerEnabled === 'false' ||
-      tickerEnabled === 0 ||
-      tickerEnabled === '0'
-        ? false
-        : Boolean(tickerEnabled);
+    const v = typeof tickerEnabled === 'string' ? tickerEnabled.trim().toLowerCase() : tickerEnabled;
+    if (v === true || v === 'true' || v === 1 || v === '1') {
+      validated.tickerEnabled = true;
+    } else if (v === false || v === 'false' || v === 0 || v === '0') {
+      validated.tickerEnabled = false;
+    } else {
+      errors.push(
+        'tickerEnabled must be a boolean, the string "true"/"false", or numeric 1/0',
+      );
+    }
   }
 
   if (errors.length > 0) {

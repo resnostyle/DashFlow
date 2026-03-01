@@ -267,8 +267,8 @@ body {
 .sports-primary-next {
     grid-column: 2;
     grid-row: 1 / 3;
-    background: linear-gradient(135deg, #0a1628 0%, #1a1a1a 100%);
-    border: 1px solid #00539b;
+    background: linear-gradient(135deg, var(--sports-team-primary-dark, #0a1628) 0%, #1a1a1a 100%);
+    border: 1px solid var(--sports-team-primary, #00539b);
     border-radius: 10px;
     padding: 1rem 1.25rem;
     min-height: 0;
@@ -324,7 +324,7 @@ body {
 
 .sports-primary-rank {
     font-size: 1.1rem;
-    color: #4a9eff;
+    color: var(--sports-team-primary-light, #4a9eff);
     font-weight: 600;
 }
 
@@ -446,15 +446,15 @@ body {
     background: #1a1a1a;
     border-radius: 8px;
     padding: 1rem 1.25rem;
-    border: 1px solid #333;
+    border: 1px solid var(--sports-team-card-color, #333);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
 }
 
 .sports-team-primary {
-    border-color: #00539b;
-    background: linear-gradient(135deg, #0a1628 0%, #1a1a1a 100%);
+    border-color: var(--sports-team-primary, #00539b);
+    background: linear-gradient(135deg, var(--sports-team-primary-dark, #0a1628) 0%, #1a1a1a 100%);
 }
 
 .sports-team-header {
@@ -497,7 +497,7 @@ body {
 
 .sports-team-rank {
     font-size: 0.85rem;
-    color: #4a9eff;
+    color: var(--sports-team-card-light, #4a9eff);
     font-weight: 600;
 }
 

@@ -82,6 +82,7 @@ function parseTeamFromSchedule(scheduleRes) {
     shortName: t.shortDisplayName,
     logo: t.logo,
     color: t.color,
+    alternateColor: t.alternateColor,
     record: t.recordSummary,
     standing: t.standingSummary,
     rank: t.curatedRank?.current,
@@ -154,7 +155,8 @@ function parseEvent(event) {
           id: home.team?.id,
           name: home.team?.displayName,
           shortName: home.team?.shortDisplayName,
-          logo: home.team?.logo,
+          logo: home.team?.logo ?? home.team?.logos?.[0]?.href,
+          color: home.team?.color,
           score: toScoreString(home.score),
           winner: home.winner,
         }
@@ -164,7 +166,8 @@ function parseEvent(event) {
           id: away.team?.id,
           name: away.team?.displayName,
           shortName: away.team?.shortDisplayName,
-          logo: away.team?.logo,
+          logo: away.team?.logo ?? away.team?.logos?.[0]?.href,
+          color: away.team?.color,
           score: toScoreString(away.score),
           winner: away.winner,
         }
@@ -215,6 +218,9 @@ async function getNCAAData(league, teamIds = {}) {
   const recordExtras = parseTeamRecord(primaryTeamRes);
   if (primaryTeam) {
     Object.assign(primaryTeam, recordExtras);
+    if (primaryTeamRes?.team?.alternateColor && !primaryTeam.alternateColor) {
+      primaryTeam.alternateColor = primaryTeamRes.team.alternateColor;
+    }
   }
 
   const primaryEvents = primarySchedule?.events || [];

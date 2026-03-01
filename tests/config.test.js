@@ -184,6 +184,15 @@ describe('Config API', () => {
       expect(res.body.tickerEnabled).toBe(false);
     });
 
+    it('returns 400 for invalid tickerEnabled value', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 'off' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/tickerEnabled/);
+    });
+
     it('returns 404 for non-existent dashboard', async () => {
       const res = await request(app)
         .post('/api/config')

@@ -1,3 +1,8 @@
+// utils.js must be loaded before app.js (provides escapeHtml, safeUrl)
+if (typeof safeUrl !== 'function') {
+  throw new Error('utils.js must be loaded before app.js');
+}
+
 // WebSocket connection
 const socket = io();
 

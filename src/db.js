@@ -669,6 +669,8 @@ function getRawDb() {
 }
 
 module.exports = {
+  DATA_DIR,
+  DB_PATH,
   initialize,
   close,
   cleanupExpiredSessions,

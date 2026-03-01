@@ -229,6 +229,9 @@ function editDashboard(id) {
   document.getElementById('editDashboardSport').value = d.sport || 'mens';
   document.getElementById('editDashboardSportRow').hidden = d.type !== 'sports';
   document.getElementById('editDashboardModal').hidden = false;
+  const nameInput = document.getElementById('editDashboardName');
+  nameInput.focus();
+  nameInput.select();
 }
 
 /**

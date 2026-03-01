@@ -137,7 +137,7 @@ describe('Feeds API', () => {
         .query({ dashboard: 'feed-test' })
         .send({ url: 'https://example.com/rss', logo: 'bad-logo' });
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/Invalid/);
+      expect(res.body.error).toMatch(/Invalid URL format/);
     });
 
     it('returns 404 for non-existent dashboard', async () => {

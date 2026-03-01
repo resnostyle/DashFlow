@@ -116,13 +116,6 @@ app.post('/admin/logout', (req, res) => {
   });
 });
 
-app.get('/admin/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) console.error('Session destroy error:', err);
-    res.redirect('/admin/login');
-  });
-});
-
 // Admin page (protected when ADMIN_PASSWORD is set)
 app.get('/admin', ensureAuthenticated, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
