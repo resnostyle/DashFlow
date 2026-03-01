@@ -45,6 +45,7 @@ function setError(message) {
 
 /**
  * Perform an HTTP request against the configured API base and return the parsed JSON response.
+ * Shows loading state during the request.
  * @param {string} method - HTTP method (e.g., "GET", "POST", "PUT", "DELETE").
  * @param {string} path - Path appended to the API base (should begin with '/').
  * @param {any} [body] - Optional request payload which will be JSON-stringified and sent with a Content-Type of application/json.
@@ -414,10 +415,11 @@ async function bulkImportFeeds() {
 /**
  * Remove a feed by its id from the currently selected dashboard.
  *
- * Deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
+ * Prompts for confirmation, then deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
  * @param {string} id - The feed identifier to delete.
  */
 async function deleteFeed(id) {
+  if (!confirm('Delete this feed?')) return;
   try {
     await api('DELETE', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Feed deleted');
@@ -547,10 +549,11 @@ async function addContent(e) {
 /**
  * Delete a content item from the currently selected dashboard.
  *
- * On success, displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
+ * Prompts for confirmation, then on success displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
  * @param {string} id - The ID of the content item to delete.
  */
 async function deleteContent(id) {
+  if (!confirm('Delete this content item?')) return;
   try {
     await api('DELETE', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Content deleted');
@@ -681,10 +684,15 @@ function closeModal(modalId) {
 document.getElementById('editDashboardForm').onsubmit = async (e) => {
   e.preventDefault();
   const id = document.getElementById('editDashboardId').value;
+  const name = document.getElementById('editDashboardName').value.trim();
+  if (!name) {
+    showToast('Dashboard name is required', true);
+    return;
+  }
   const type = document.getElementById('editDashboardType').value;
   const sport = type === 'sports' ? document.getElementById('editDashboardSport').value : undefined;
   await updateDashboard(id, {
-    name: document.getElementById('editDashboardName').value.trim(),
+    name,
     description: document.getElementById('editDashboardDesc').value.trim(),
     type,
     sport,

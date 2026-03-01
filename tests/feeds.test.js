@@ -122,13 +122,22 @@ describe('Feeds API', () => {
       expect(res.body.error).toMatch(/Invalid URL/);
     });
 
+    it('returns 400 for localhost url (SSRF prevention)', async () => {
+      const res = await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'feed-test' })
+        .send({ url: 'http://localhost/feed.xml' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/localhost|not allowed/);
+    });
+
     it('returns 400 for invalid logo url', async () => {
       const res = await request(app)
         .post('/api/feeds')
         .query({ dashboard: 'feed-test' })
         .send({ url: 'https://example.com/rss', logo: 'bad-logo' });
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/Invalid logo URL/);
+      expect(res.body.error).toMatch(/Invalid/);
     });
 
     it('returns 404 for non-existent dashboard', async () => {

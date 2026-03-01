@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const rss = require('../services/rss');
 const { getDashboardId } = require('../middleware');
+const { validateFetchUrl } = require('../utils/urlValidation');
 
 const router = express.Router();
 
@@ -24,16 +25,14 @@ router.post('/', async (req, res) => {
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
   }
-  try {
-    new URL(url);
-  } catch {
-    return res.status(400).json({ error: 'Invalid URL format' });
+  const urlCheck = validateFetchUrl(url);
+  if (!urlCheck.valid) {
+    return res.status(400).json({ error: urlCheck.error || 'Invalid URL' });
   }
   if (logo) {
-    try {
-      new URL(logo);
-    } catch {
-      return res.status(400).json({ error: 'Invalid logo URL format' });
+    const logoCheck = validateFetchUrl(logo);
+    if (!logoCheck.valid) {
+      return res.status(400).json({ error: logoCheck.error || 'Invalid logo URL' });
     }
   }
 
@@ -60,17 +59,15 @@ router.put('/:id', async (req, res) => {
   const { name, url, logo } = req.body;
 
   if (url) {
-    try {
-      new URL(url);
-    } catch {
-      return res.status(400).json({ error: 'Invalid URL format' });
+    const urlCheck = validateFetchUrl(url);
+    if (!urlCheck.valid) {
+      return res.status(400).json({ error: urlCheck.error || 'Invalid URL' });
     }
   }
   if (logo) {
-    try {
-      new URL(logo);
-    } catch {
-      return res.status(400).json({ error: 'Invalid logo URL format' });
+    const logoCheck = validateFetchUrl(logo);
+    if (!logoCheck.valid) {
+      return res.status(400).json({ error: logoCheck.error || 'Invalid logo URL' });
     }
   }
 

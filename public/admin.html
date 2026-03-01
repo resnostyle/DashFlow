@@ -11,7 +11,10 @@
     <div class="admin-container">
         <header class="admin-header">
             <h1>News Ticker Admin</h1>
-            <a href="/dashboard/default" class="admin-link">View Display</a>
+            <a id="viewDisplayLink" href="/dashboard/default" class="admin-link">View Display</a>
+            <form method="post" action="/admin/logout" style="display:inline;">
+                <button type="submit" class="admin-link admin-logout-btn">Log out</button>
+            </form>
         </header>
 
         <div id="toast" class="toast" aria-live="polite"></div>
