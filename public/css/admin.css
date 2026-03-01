@@ -1,0 +1,240 @@
+/* Admin page styles */
+
+body {
+  overflow: auto;
+}
+
+.admin-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #111;
+  color: #eee;
+  min-height: 100vh;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.admin-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.admin-link {
+  color: #4a9eff;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.admin-link:hover {
+  color: #6bb3ff;
+  text-decoration: underline;
+}
+
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.toast[hidden] {
+  display: none;
+}
+
+.toast-success {
+  background: #1a472a;
+  color: #7dd;
+  border: 1px solid #2d5a3d;
+}
+
+.toast-error {
+  background: #4a1a1a;
+  color: #faa;
+  border: 1px solid #5a2d2d;
+}
+
+.admin-section {
+  margin-bottom: 2.5rem;
+}
+
+.admin-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.admin-section h3 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  color: #ccc;
+}
+
+.admin-form {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  margin-bottom: 1rem;
+}
+
+.form-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.admin-form label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  color: #aaa;
+}
+
+.admin-form .required {
+  color: #e66;
+}
+
+.admin-form input[type="text"],
+.admin-form input[type="url"],
+.admin-form input[type="number"],
+.admin-form select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.admin-form .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-form .checkbox-row label {
+  margin-bottom: 0;
+}
+
+.admin-form input[type="checkbox"] {
+  width: auto;
+  accent-color: #4a9eff;
+}
+
+.admin-form button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background: #2a4a6a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-form button:hover {
+  background: #3a5a7a;
+}
+
+.dashboard-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-select-row label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.dashboard-select-row select {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+}
+
+.admin-list {
+  margin-top: 0.5rem;
+}
+
+.admin-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.admin-list-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.admin-list-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.admin-list-actions button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  background: transparent;
+  color: #4a9eff;
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-list-actions button:hover {
+  background: rgba(74, 158, 255, 0.15);
+}
+
+.admin-list-actions .btn-delete {
+  color: #e66;
+  border-color: #e66;
+}
+
+.admin-list-actions .btn-delete:hover {
+  background: rgba(238, 102, 102, 0.15);
+}
+
+.admin-empty {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login – News Ticker</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Admin Login</h1>
+        </header>
+        <p id="loginError" class="admin-empty" style="color: #faa;" hidden aria-live="polite">Invalid password.</p>
+        <form id="loginForm" class="admin-form" method="post" action="/admin/login">
+            <div class="form-row">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            <button type="submit">Sign in</button>
+        </form>
+        <script>
+            if (window.location.search.includes('error=invalid')) {
+                document.getElementById('loginError').hidden = false;
+            }
+        </script>
+        <p class="admin-empty"><a href="/dashboard/default" class="admin-link">Back to display</a></p>
+    </div>
+</body>
+</html>

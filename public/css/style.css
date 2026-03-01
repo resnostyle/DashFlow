@@ -17,6 +17,22 @@ body {
     color: #fff;
 }
 
+.manage-link {
+    position: fixed;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 100;
+    font-size: 0.85rem;
+    color: #4a9eff;
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.manage-link:hover {
+    opacity: 1;
+}
+
 .container {
     display: flex;
     flex-direction: column;
