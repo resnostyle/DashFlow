@@ -94,15 +94,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.use('/api/dashboards', require('./routes/dashboards'));
-app.use('/api/sports', require('./routes/sports'));
-app.use('/api/feeds', require('./routes/feeds'));
-app.use('/api/content', require('./routes/content'));
-app.use('/api/config', require('./routes/config'));
-app.use('/api/ticker', require('./routes/ticker'));
-// API routes (protected when ADMIN_PASSWORD is set)
+// API routes (protected when ADMIN_PASSWORD is set; ensureAuthenticated passes through when it is not)
 app.use('/api/dashboards', ensureAuthenticated, require('./routes/dashboards'));
+app.use('/api/sports', ensureAuthenticated, require('./routes/sports'));
 app.use('/api/feeds', ensureAuthenticated, require('./routes/feeds'));
 app.use('/api/content', ensureAuthenticated, require('./routes/content'));
 app.use('/api/config', ensureAuthenticated, require('./routes/config'));

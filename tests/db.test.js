@@ -147,30 +147,30 @@ describe('Database layer', () => {
       expect(typeof store.destroy).toBe('function');
     });
 
-    it('session store persists and retrieves sessions', (done) => {
+    it('session store persists and retrieves sessions', async () => {
       const store = db.createSessionStore();
       const sid = 'test-session-' + Date.now();
       const sess = { cookie: {}, authenticated: true, role: 'admin' };
 
-      store.set(sid, sess, (err) => {
-        expect(err).toBeNull();
-        store.get(sid, (err2, retrieved) => {
-          expect(err2).toBeNull();
-          expect(retrieved).toBeTruthy();
-          expect(retrieved.authenticated).toBe(true);
-          store.destroy(sid, (err3) => {
-            expect(err3).toBeNull();
-            store.get(sid, (err4, afterDestroy) => {
-              expect(err4).toBeNull();
-              expect(afterDestroy).toBeNull();
-              done();
-            });
-          });
-        });
+      await new Promise((resolve, reject) => {
+        store.set(sid, sess, (err) => (err ? reject(err) : resolve()));
       });
+      const retrieved = await new Promise((resolve, reject) => {
+        store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+      });
+      expect(retrieved).toBeTruthy();
+      expect(retrieved.authenticated).toBe(true);
+
+      await new Promise((resolve, reject) => {
+        store.destroy(sid, (err) => (err ? reject(err) : resolve()));
+      });
+      const afterDestroy = await new Promise((resolve, reject) => {
+        store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+      });
+      expect(afterDestroy).toBeNull();
     });
 
-    it('session store does not return expired sessions', (done) => {
+    it('session store does not return expired sessions', async () => {
       const store = db.createSessionStore();
       const sid = 'expired-session-' + Date.now();
       const pastExpire = Math.floor(Date.now() / 1000) - 3600;
@@ -180,11 +180,10 @@ describe('Database layer', () => {
         JSON.stringify({ cookie: {}, expired: true }),
         pastExpire,
       );
-      store.get(sid, (err, retrieved) => {
-        expect(err).toBeNull();
-        expect(retrieved).toBeNull();
-        done();
+      const retrieved = await new Promise((resolve, reject) => {
+        store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
       });
+      expect(retrieved).toBeNull();
     });
   });
 
