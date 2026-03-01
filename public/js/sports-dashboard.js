@@ -37,7 +37,7 @@ function formatNextGameDate(dateStr) {
 function renderNewsSlider(newsItems) {
     if (!newsItems?.length) return '';
     const items = newsItems.slice(0, 8).map(item => {
-        const safeImage = typeof safeUrl === 'function' ? safeUrl(item.image) : '';
+        const safeImage = typeof safeUrl === 'function' ? safeUrl(item.image) : null;
         const hasImage = !!safeImage;
         const mediaHtml = hasImage
             ? `<div class="sports-news-card-media"><img src="${escapeHtml(safeImage)}" alt="" class="sports-news-card-img" loading="lazy" /></div>`
@@ -66,8 +66,8 @@ function renderTeamCard(team, lastGame, upcomingGames) {
         ? [lastGame.home, lastGame.away].find(c => c && String(c.id) === String(team.id))
         : null;
     const won = ourCompetitor?.winner;
-    const awayLogoSafe = lastGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.away.logo) : lastGame.away.logo);
-    const homeLogoSafe = lastGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.home.logo) : lastGame.home.logo);
+    const awayLogoSafe = lastGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.away.logo) : null);
+    const homeLogoSafe = lastGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.home.logo) : null);
     const lastGameHtml = lastGame
         ? `<div class="sports-last-game">
             ${won !== undefined ? `<span class="sports-result ${won ? 'sports-win' : 'sports-loss'}">${won ? 'W' : 'L'}</span>` : ''}
@@ -85,8 +85,8 @@ function renderTeamCard(team, lastGame, upcomingGames) {
     const upcomingHtml = upcomingGames?.length > 0
         ? `<div class="sports-upcoming">
             ${upcomingGames.slice(0, 2).map(g => {
-                const gAwayLogo = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : g.away.logo);
-                const gHomeLogo = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : g.home.logo);
+                const gAwayLogo = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : null);
+                const gHomeLogo = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : null);
                 return `<div class="sports-upcoming-game">
                     <span class="sports-upcoming-date">${escapeHtml(formatGameDate(g.date))}</span>
                     <span class="sports-game-matchup">
@@ -102,9 +102,14 @@ function renderTeamCard(team, lastGame, upcomingGames) {
             }).join('')}
            </div>`
         : '';
-    const teamLogoSafe = team.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : team.logo);
+    const teamLogoSafe = team.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : null);
+    const teamColorHex = team.color && typeof normalizeTeamColor === 'function' ? normalizeTeamColor(team.color) : null;
+    const cardLight = teamColorHex && typeof lightenHex === 'function' ? lightenHex(teamColorHex, 0.5) : null;
+    const cardStyle = teamColorHex
+        ? ` style="--sports-team-card-color: ${escapeHtml(teamColorHex)}${cardLight ? '; --sports-team-card-light: ' + escapeHtml(cardLight) : ''}"`
+        : '';
     return `
-        <div class="sports-team-card">
+        <div class="sports-team-card"${cardStyle}>
             <div class="sports-team-header">
                 ${teamLogoSafe ? `<img src="${escapeHtml(teamLogoSafe)}" alt="${escapeHtml(team.name || '')}" class="sports-team-logo" />` : ''}
                 <div class="sports-team-info">
@@ -139,8 +144,8 @@ function renderPrimaryPage(primary, newsItems = []) {
     if (team?.recordHome) statsParts.push({ label: 'Home', value: team.recordHome });
     if (team?.recordAway) statsParts.push({ label: 'Away', value: team.recordAway });
 
-    const primaryAwayLogoSafe = lastGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.away.logo) : lastGame.away.logo);
-    const primaryHomeLogoSafe = lastGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.home.logo) : lastGame.home.logo);
+    const primaryAwayLogoSafe = lastGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.away.logo) : null);
+    const primaryHomeLogoSafe = lastGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(lastGame.home.logo) : null);
     const lastGameHtml = lastGame
         ? `<div class="sports-primary-last">
             <span class="sports-primary-last-label">Last:</span>
@@ -161,8 +166,8 @@ function renderPrimaryPage(primary, newsItems = []) {
     const upcomingHtml = moreUpcoming.length
         ? `<div class="sports-primary-upcoming">
             ${moreUpcoming.map(g => {
-                const gAwayLogo = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : g.away.logo);
-                const gHomeLogo = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : g.home.logo);
+                const gAwayLogo = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : null);
+                const gHomeLogo = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : null);
                 return `<div class="sports-primary-upcoming-game">
                     <span class="sports-upcoming-date">${escapeHtml(formatGameDate(g.date))}</span>
                     <span class="sports-game-matchup">
@@ -181,9 +186,9 @@ function renderPrimaryPage(primary, newsItems = []) {
 
     const newsHtml = newsItems?.length ? renderNewsSlider(newsItems) : '';
 
-    const primaryTeamLogoSafe = team?.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : team.logo);
-    const nextAwayLogoSafe = nextGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(nextGame.away.logo) : nextGame.away.logo);
-    const nextHomeLogoSafe = nextGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(nextGame.home.logo) : nextGame.home.logo);
+    const primaryTeamLogoSafe = team?.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : null);
+    const nextAwayLogoSafe = nextGame?.away?.logo && (typeof safeUrl === 'function' ? safeUrl(nextGame.away.logo) : null);
+    const nextHomeLogoSafe = nextGame?.home?.logo && (typeof safeUrl === 'function' ? safeUrl(nextGame.home.logo) : null);
     return `
         <div class="sports-primary-grid">
             <div class="sports-primary-hero">
@@ -237,7 +242,7 @@ function renderACCStandings(standings) {
     return `
         <div class="sports-standings">
             ${standings.map((s, i) => {
-                const sLogoSafe = s.logo && (typeof safeUrl === 'function' ? safeUrl(s.logo) : s.logo);
+                const sLogoSafe = s.logo && (typeof safeUrl === 'function' ? safeUrl(s.logo) : null);
                 return `
                 <div class="sports-standings-row">
                     <span class="sports-standings-rank">${i + 1}</span>
@@ -260,6 +265,17 @@ function rotateSportsPage() {
     const primaryActive = primaryPage.classList.contains('sports-page-active');
     primaryPage.classList.toggle('sports-page-active', !primaryActive);
     secondaryPage.classList.toggle('sports-page-active', primaryActive);
+}
+
+function applyTeamTheme(dashboardEl, primaryColor) {
+    if (!dashboardEl || !primaryColor) return;
+    const hex = typeof normalizeTeamColor === 'function' ? normalizeTeamColor(primaryColor) : null;
+    if (!hex) return;
+    const dark = typeof darkenHex === 'function' ? darkenHex(hex, 0.15) : '#0a1628';
+    const light = typeof lightenHex === 'function' ? lightenHex(hex, 0.5) : '#4a9eff';
+    dashboardEl.style.setProperty('--sports-team-primary', hex);
+    dashboardEl.style.setProperty('--sports-team-primary-dark', dark);
+    dashboardEl.style.setProperty('--sports-team-primary-light', light);
 }
 
 function renderSportsDashboard(data, sportLabel, newsItems = [], rotationIntervalMs = 30000) {
@@ -312,6 +328,12 @@ function renderSportsDashboard(data, sportLabel, newsItems = [], rotationInterva
             ${secondaryPageHtml}
         </div>
     `;
+
+    const dashboardEl = container.querySelector('.sports-dashboard');
+    const primaryColor = primary?.team?.color;
+    if (dashboardEl && primaryColor && typeof applyTeamTheme === 'function') {
+        applyTeamTheme(dashboardEl, primaryColor);
+    }
 
     sportsPageRotationInterval = setInterval(rotateSportsPage, intervalMs);
 }

@@ -19,23 +19,54 @@ function validateFetchUrl(url) {
     return { valid: false, error: 'URL must use http or https' };
   }
   const hostname = parsed.hostname.toLowerCase();
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+
+  // Hostname checks (localhost, hostnames)
+  if (hostname === 'localhost') {
     return { valid: false, error: 'localhost URLs are not allowed' };
   }
-  // Reject private/link-local IPv4
+  if (hostname === '::1') {
+    return { valid: false, error: 'localhost URLs are not allowed' };
+  }
+
+  // IPv4 checks
   const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (ipv4Match) {
-    const [, a, b, c] = ipv4Match.map(Number);
+    const [, a, b, c, d] = ipv4Match.map(Number);
+    if (a === 0 && b === 0 && c === 0 && d === 0) {
+      return { valid: false, error: '0.0.0.0 is not allowed' };
+    }
+    if (a === 127) {
+      return { valid: false, error: 'localhost URLs are not allowed' };
+    }
     if (a === 10) return { valid: false, error: 'Private IP ranges not allowed' };
     if (a === 172 && b >= 16 && b <= 31) return { valid: false, error: 'Private IP ranges not allowed' };
     if (a === 192 && b === 168) return { valid: false, error: 'Private IP ranges not allowed' };
     if (a === 169 && b === 254) return { valid: false, error: 'Link-local addresses not allowed' };
+    return { valid: true };
   }
+
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x) - reject entire ::ffff:0:0/96 range
+  if (hostname.startsWith('::ffff:')) {
+    return { valid: false, error: 'IPv4-mapped IPv6 addresses not allowed' };
+  }
+
+  // IPv6 private (fc00::/7) and link-local (fe80::/10)
+  const firstSegment = hostname.split(':')[0] || '';
+  const firstHex = parseInt(firstSegment, 16);
+  if (!isNaN(firstHex)) {
+    if (firstHex >= 0xfc00 && firstHex <= 0xfdff) {
+      return { valid: false, error: 'Private IP ranges not allowed' };
+    }
+    if (firstHex >= 0xfe80 && firstHex <= 0xfebf) {
+      return { valid: false, error: 'Link-local addresses not allowed' };
+    }
+  }
+
   return { valid: true };
 }
 
 /**
- * Validate URL for API input (format + basic safety). Uses validateFetchUrl for fetch URLs.
+ * Alias for validateFetchUrl. Kept for backward compatibility.
  * @param {string} url - URL to validate
  * @returns {{ valid: boolean, error?: string }}
  */

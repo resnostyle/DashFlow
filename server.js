@@ -1,4 +1,3 @@
-const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./src/app');
@@ -8,8 +7,7 @@ const socket = require('./src/socket');
 const sportsRefresh = require('./src/services/sports-refresh');
 
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const DB_PATH = path.join(DATA_DIR, 'news-ticker.db');
+const { DATA_DIR, DB_PATH } = db;
 
 // Initialize database (creates tables, migrates JSON data if needed)
 db.initialize();

@@ -182,13 +182,9 @@ async function createDashboard(e) {
  * @param {string} description - The new description for the dashboard.
  */
 async function updateDashboard(id, name, description) {
-  try {
-    await api('PUT', `/dashboards/${encodeURIComponent(id)}`, { name, description });
-    showToast('Dashboard updated');
-    await loadDashboards();
-  } catch (err) {
-    showToast(err.message, true);
-  }
+  await api('PUT', `/dashboards/${encodeURIComponent(id)}`, { name, description });
+  showToast('Dashboard updated');
+  await loadDashboards();
 }
 
 /**
@@ -222,6 +218,9 @@ function editDashboard(id) {
   document.getElementById('editDashboardName').value = name;
   document.getElementById('editDashboardDesc').value = description;
   document.getElementById('editDashboardModal').hidden = false;
+  const nameInput = document.getElementById('editDashboardName');
+  nameInput.focus();
+  nameInput.select();
 }
 
 function closeEditDashboardModal() {
@@ -546,8 +545,12 @@ document.getElementById('editDashboardForm').onsubmit = async (e) => {
     showToast('Dashboard name is required', true);
     return;
   }
-  closeEditDashboardModal();
-  await updateDashboard(id, name, description);
+  try {
+    await updateDashboard(id, name, description);
+    closeEditDashboardModal();
+  } catch (err) {
+    showToast(err.message, true);
+  }
 };
 
 document.getElementById('editDashboardCancel').onclick = closeEditDashboardModal;
