@@ -9,6 +9,14 @@ router.get('/', (req, res) => {
   res.json(db.getFeeds(getDashboardId(req)));
 });
 
+router.get('/health', (req, res) => {
+  const dashboardId = getDashboardId(req);
+  if (!db.getDashboard(dashboardId)) {
+    return res.status(404).json({ error: 'Dashboard not found' });
+  }
+  res.json(rss.getFeedHealth(dashboardId));
+});
+
 router.post('/', async (req, res) => {
   const dashboardId = getDashboardId(req);
   const { name, url, logo } = req.body;
@@ -41,6 +49,7 @@ router.post('/', async (req, res) => {
     } catch (err) {
       console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
     }
+    rss.scheduleDashboard(dashboardId);
   }
 
   res.status(201).json(feed);
@@ -76,6 +85,7 @@ router.put('/:id', async (req, res) => {
     } catch (err) {
       console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
     }
+    rss.scheduleDashboard(dashboardId);
   }
 
   res.json(feed);
@@ -84,16 +94,23 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const dashboardId = getDashboardId(req);
 
-  if (!db.deleteFeed(req.params.id, dashboardId)) {
+  const deletedFeedId = req.params.id;
+  if (!db.deleteFeed(deletedFeedId, dashboardId)) {
     return res.status(404).json({ error: 'Feed not found' });
   }
 
-  if (db.getConfig(dashboardId).tickerEnabled) {
+  rss.clearFeedHealth(deletedFeedId);
+
+  const feedsLeft = db.getFeeds(dashboardId);
+  if (feedsLeft.length > 0 && db.getConfig(dashboardId).tickerEnabled) {
     try {
       await rss.fetchFeeds(dashboardId);
     } catch (err) {
       console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
     }
+    rss.scheduleDashboard(dashboardId);
+  } else {
+    rss.clearTickerItems(dashboardId);
   }
 
   res.json({ message: 'Feed deleted' });

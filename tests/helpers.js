@@ -41,7 +41,10 @@ export function getApp({ mockRss = true, rssOverrides = {} } = {}) {
     vi.spyOn(rss, 'startRefreshLoop').mockImplementation(() => {});
     vi.spyOn(rss, 'stopRefreshLoop').mockImplementation(() => {});
     vi.spyOn(rss, 'restartRefreshLoop').mockImplementation(() => {});
+    vi.spyOn(rss, 'scheduleDashboard').mockImplementation(() => {});
     vi.spyOn(rss, 'clearTickerItems').mockImplementation(() => {});
+    vi.spyOn(rss, 'clearFeedHealth').mockImplementation(() => {});
+    vi.spyOn(rss, 'getFeedHealth').mockImplementation(() => ({}));
     vi.spyOn(rss, 'getTickerItems').mockImplementation(
       rssOverrides.getTickerItems ?? (() => []),
     );

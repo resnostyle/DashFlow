@@ -185,6 +185,24 @@ describe('Database layer', () => {
       });
       expect(retrieved).toBeNull();
     });
+
+    it('cleanupExpiredSessions removes expired sessions', () => {
+      const rawDb = db.getRawDb();
+      const pastExpire = Math.floor(Date.now() / 1000) - 3600;
+      const sid = 'cleanup-test-' + Date.now();
+      rawDb.prepare('INSERT INTO sessions (sid, sess, expire) VALUES (?, ?, ?)').run(
+        sid,
+        JSON.stringify({ cookie: {} }),
+        pastExpire,
+      );
+      const before = rawDb.prepare('SELECT COUNT(*) as c FROM sessions WHERE sid = ?').get(sid);
+      expect(before.c).toBe(1);
+
+      db.cleanupExpiredSessions();
+
+      const after = rawDb.prepare('SELECT COUNT(*) as c FROM sessions WHERE sid = ?').get(sid);
+      expect(after.c).toBe(0);
+    });
   });
 
   describe('getSportsDashboards', () => {

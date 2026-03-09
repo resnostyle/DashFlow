@@ -48,6 +48,11 @@ function startSportsRefreshLoop() {
 }
 startSportsRefreshLoop();
 
+// Session cleanup (expired sessions in SQLite)
+const SESSION_CLEANUP_MS = 24 * 60 * 60 * 1000; // 24 hours
+db.cleanupExpiredSessions();
+const sessionCleanupInterval = setInterval(db.cleanupExpiredSessions, SESSION_CLEANUP_MS);
+
 // Start listening
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -59,6 +64,7 @@ function shutdown() {
   console.log('Shutting down...');
   rss.stopRefreshLoop();
   if (sportsRefreshInterval) clearInterval(sportsRefreshInterval);
+  clearInterval(sessionCleanupInterval);
   server.close(() => {
     db.close();
     process.exit(0);

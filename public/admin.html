@@ -15,6 +15,8 @@
         </header>
 
         <div id="toast" class="toast" aria-live="polite"></div>
+        <div id="adminError" class="admin-error" role="alert" hidden></div>
+        <div id="adminLoading" class="admin-loading" aria-busy="true" hidden></div>
 
         <section class="admin-section">
             <h2>Dashboard</h2>
@@ -75,6 +77,11 @@
                 </div>
                 <button type="submit">Add feed</button>
             </form>
+            <div class="bulk-import-row">
+                <label for="bulkFeedUrls">Bulk import (one URL per line)</label>
+                <textarea id="bulkFeedUrls" name="bulkFeedUrls" rows="3" placeholder="https://example.com/feed1.xml&#10;https://example.com/feed2.xml"></textarea>
+                <button type="button" id="bulkImportBtn">Import</button>
+            </div>
             <div id="feedsList" class="admin-list"></div>
         </section>
 
@@ -135,6 +142,97 @@
                 <button type="submit">Save config</button>
             </form>
         </section>
+    </div>
+
+    <div id="editDashboardModal" class="modal" hidden>
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3>Edit dashboard</h3>
+            <form id="editDashboardForm">
+                <input type="hidden" id="editDashboardId">
+                <div class="form-row">
+                    <label for="editDashboardName">Name</label>
+                    <input type="text" id="editDashboardName" required>
+                </div>
+                <div class="form-row">
+                    <label for="editDashboardDesc">Description</label>
+                    <input type="text" id="editDashboardDesc">
+                </div>
+                <div class="form-row">
+                    <label for="editDashboardType">Type</label>
+                    <select id="editDashboardType">
+                        <option value="default">Default (news/content)</option>
+                        <option value="sports">Sports</option>
+                    </select>
+                </div>
+                <div class="form-row" id="editDashboardSportRow" hidden>
+                    <label for="editDashboardSport">Sport</label>
+                    <select id="editDashboardSport">
+                        <option value="mens">Men's</option>
+                        <option value="womens">Women's</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editFeedModal" class="modal" hidden>
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3>Edit feed</h3>
+            <form id="editFeedForm">
+                <input type="hidden" id="editFeedId">
+                <div class="form-row">
+                    <label for="editFeedName">Name</label>
+                    <input type="text" id="editFeedName">
+                </div>
+                <div class="form-row">
+                    <label for="editFeedUrl">URL <span class="required">*</span></label>
+                    <input type="url" id="editFeedUrl" required>
+                </div>
+                <div class="form-row">
+                    <label for="editFeedLogo">Logo URL</label>
+                    <input type="url" id="editFeedLogo">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editContentModal" class="modal" hidden>
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3>Edit content</h3>
+            <form id="editContentForm">
+                <input type="hidden" id="editContentId">
+                <div class="form-row">
+                    <label for="editContentUrl">URL <span class="required">*</span></label>
+                    <input type="url" id="editContentUrl" required>
+                </div>
+                <div class="form-row">
+                    <label for="editContentTitle">Title</label>
+                    <input type="text" id="editContentTitle">
+                </div>
+                <div class="form-row">
+                    <label for="editContentType">Type</label>
+                    <select id="editContentType">
+                        <option value="webpage">Webpage</option>
+                        <option value="youtube">YouTube</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="/js/admin.js"></script>

@@ -70,10 +70,20 @@ router.post('/', async (req, res) => {
   }
 
   if (tickerEnabled !== undefined) {
-    if (typeof tickerEnabled !== 'boolean') {
-      errors.push('tickerEnabled must be a boolean');
+    const truthy =
+      tickerEnabled === true ||
+      tickerEnabled === 'true' ||
+      tickerEnabled === 1 ||
+      tickerEnabled === '1';
+    const falsy =
+      tickerEnabled === false ||
+      tickerEnabled === 'false' ||
+      tickerEnabled === 0 ||
+      tickerEnabled === '0';
+    if (!truthy && !falsy) {
+      errors.push('tickerEnabled must be a boolean or boolean-like value (true, false, 1, 0)');
     } else {
-      validated.tickerEnabled = tickerEnabled;
+      validated.tickerEnabled = Boolean(truthy);
     }
   }
 
@@ -102,6 +112,7 @@ router.post('/', async (req, res) => {
         } catch (err) {
           console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
         }
+        rss.scheduleDashboard(dashboardId);
       }
     }
   }
