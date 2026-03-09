@@ -281,7 +281,7 @@ function editFeed(feed) {
   if (url === null) return;
   const logo = prompt('Logo URL (leave empty for none):', feed.logo || '');
   if (logo === null) return;
-  updateFeed(feed.id, { name: name || undefined, url: url || undefined, logo: logo || undefined });
+  updateFeed(feed.id, { name: name || undefined, url: url || undefined, logo: logo === '' ? null : (logo || undefined) });
 }
 
 /**
@@ -413,8 +413,12 @@ function editContent(content) {
   if (title === null) return;
   const type = prompt('Type (webpage or youtube):', content.type || 'webpage');
   if (type === null) return;
-  const validType = type === 'youtube' ? 'youtube' : 'webpage';
-  updateContent(content.id, { url: url || undefined, title: title || undefined, type: validType });
+  const normalizedType = type.trim().toLowerCase();
+  if (normalizedType !== 'webpage' && normalizedType !== 'youtube') {
+    showToast('Type must be webpage or youtube', true);
+    return;
+  }
+  updateContent(content.id, { url: url || undefined, title: title || undefined, type: normalizedType });
 }
 
 /**
