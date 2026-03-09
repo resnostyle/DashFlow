@@ -253,6 +253,12 @@ function renderFeedsList(list) {
     item.appendChild(span);
     const actions = document.createElement('div');
     actions.className = 'admin-list-actions';
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = () => editFeed(f);
+    actions.appendChild(editBtn);
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'btn-delete';
@@ -261,6 +267,35 @@ function renderFeedsList(list) {
     actions.appendChild(delBtn);
     item.appendChild(actions);
     el.appendChild(item);
+  }
+}
+
+/**
+ * Prompt the user to edit a feed's name, URL, and logo, then update via the API.
+ * @param {Object} feed - The feed object with id, name, url, logo.
+ */
+function editFeed(feed) {
+  const name = prompt('Feed name:', feed.name || '');
+  if (name === null) return;
+  const url = prompt('Feed URL:', feed.url || '');
+  if (url === null) return;
+  const logo = prompt('Logo URL (leave empty for none):', feed.logo || '');
+  if (logo === null) return;
+  updateFeed(feed.id, { name: name || undefined, url: url || undefined, logo: logo || undefined });
+}
+
+/**
+ * Update a feed on the server and refresh the feeds list.
+ * @param {string} id - The feed identifier.
+ * @param {Object} data - Object with name, url, and/or logo to update.
+ */
+async function updateFeed(id, data) {
+  try {
+    await api('PUT', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`, data);
+    showToast('Feed updated');
+    await loadFeeds();
+  } catch (err) {
+    showToast(err.message, true);
   }
 }
 
@@ -350,6 +385,12 @@ function renderContentList(list) {
     item.appendChild(span);
     const actions = document.createElement('div');
     actions.className = 'admin-list-actions';
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = () => editContent(c);
+    actions.appendChild(editBtn);
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'btn-delete';
@@ -358,6 +399,36 @@ function renderContentList(list) {
     actions.appendChild(delBtn);
     item.appendChild(actions);
     el.appendChild(item);
+  }
+}
+
+/**
+ * Prompt the user to edit a content item's URL, title, and type, then update via the API.
+ * @param {Object} content - The content object with id, url, title, type.
+ */
+function editContent(content) {
+  const url = prompt('Content URL:', content.url || '');
+  if (url === null) return;
+  const title = prompt('Title:', content.title || '');
+  if (title === null) return;
+  const type = prompt('Type (webpage or youtube):', content.type || 'webpage');
+  if (type === null) return;
+  const validType = type === 'youtube' ? 'youtube' : 'webpage';
+  updateContent(content.id, { url: url || undefined, title: title || undefined, type: validType });
+}
+
+/**
+ * Update a content item on the server and refresh the content list.
+ * @param {string} id - The content identifier.
+ * @param {Object} data - Object with url, title, and/or type to update.
+ */
+async function updateContent(id, data) {
+  try {
+    await api('PUT', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`, data);
+    showToast('Content updated');
+    await loadContent();
+  } catch (err) {
+    showToast(err.message, true);
   }
 }
 
