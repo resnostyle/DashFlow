@@ -1,10 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { getApp } from './helpers.js';
 
-const { app, rss } = getApp();
-
 describe('Config API', () => {
+  let app;
+  let rss;
+
+  beforeEach(() => {
+    const instance = getApp();
+    app = instance.app;
+    rss = instance.rss;
+  });
+
   describe('GET /api/config', () => {
     it('returns default config', async () => {
       const res = await request(app)

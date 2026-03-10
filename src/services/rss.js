@@ -134,7 +134,7 @@ async function fetchFeeds(dashboardId) {
       feedHealth[feed.id] = {
         lastSuccess: Date.now(),
         lastError: null,
-        errorCount: feedHealth[feed.id]?.errorCount ?? 0,
+        errorCount: 0,
       };
       if (feedData?.items) {
         return feedData.items.map(item => ({

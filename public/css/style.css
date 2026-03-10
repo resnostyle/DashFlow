@@ -6,7 +6,7 @@
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }
@@ -510,7 +510,7 @@ body {
 
 .sports-team-rank {
     font-size: 0.85rem;
-    color: var(--sports-team-card-light, #4a9eff);
+    color: var(--sports-team-primary-light, #4a9eff);
     font-weight: 600;
 }
 
