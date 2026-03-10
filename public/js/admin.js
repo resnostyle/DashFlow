@@ -227,8 +227,10 @@ function editDashboard(id) {
   document.getElementById('editDashboardDesc').value = d.description || '';
   document.getElementById('editDashboardType').value = d.type || 'default';
   document.getElementById('editDashboardSport').value = d.sport || 'mens';
-  document.getElementById('editDashboardSportRow').hidden = d.type !== 'sports';
-  document.getElementById('editDashboardModal').hidden = false;
+  const sportRow = document.getElementById('editDashboardSportRow');
+  sportRow.hidden = d.type !== 'sports';
+  sportRow.setAttribute('aria-hidden', d.type !== 'sports');
+  openModal('editDashboardModal');
   const nameInput = document.getElementById('editDashboardName');
   nameInput.focus();
   nameInput.select();
@@ -318,7 +320,7 @@ function editFeed(feed) {
   document.getElementById('editFeedName').value = feed.name || '';
   document.getElementById('editFeedUrl').value = feed.url || '';
   document.getElementById('editFeedLogo').value = feed.logo || '';
-  document.getElementById('editFeedModal').hidden = false;
+  openModal('editFeedModal');
 }
 
 /**
@@ -395,16 +397,29 @@ async function bulkImportFeeds() {
     return;
   }
   const dashboardId = getDashboardId();
-  let created = 0;
-  let failed = 0;
-  for (const url of valid) {
-    try {
-      await api('POST', `/feeds?dashboard=${encodeURIComponent(dashboardId)}`, { url });
-      created++;
-    } catch {
-      failed++;
+  const CONCURRENCY = 8;
+  const tasks = valid.map((url) => () =>
+    api('POST', `/feeds?dashboard=${encodeURIComponent(dashboardId)}`, { url }, { showError: false }),
+  );
+  const runWithLimit = async (limit) => {
+    const executing = [];
+    const results = [];
+    for (const task of tasks) {
+      const p = Promise.resolve().then(task).then((r) => ({ ok: true })).catch(() => ({ ok: false }));
+      results.push(p);
+      const e = p.then(() => {
+        executing.splice(executing.indexOf(e), 1);
+      });
+      executing.push(e);
+      if (executing.length >= limit) {
+        await Promise.race(executing);
+      }
     }
-  }
+    return Promise.all(results);
+  };
+  const settled = await runWithLimit(CONCURRENCY);
+  const created = settled.filter((r) => r.ok).length;
+  const failed = settled.filter((r) => !r.ok).length;
   textarea.value = '';
   if (created > 0) {
     showToast(`Imported ${created} feed(s)${failed > 0 ? `, ${failed} failed` : ''}`);
@@ -498,7 +513,7 @@ function editContent(content) {
   document.getElementById('editContentUrl').value = content.url || '';
   document.getElementById('editContentTitle').value = content.title || '';
   document.getElementById('editContentType').value = content.type || 'webpage';
-  document.getElementById('editContentModal').hidden = false;
+  openModal('editContentModal');
 }
 
 /**
@@ -681,7 +696,19 @@ document.getElementById('configForm').onsubmit = saveConfig;
 document.getElementById('bulkImportBtn').onclick = bulkImportFeeds;
 
 function closeModal(modalId) {
-  document.getElementById(modalId).hidden = true;
+  const el = document.getElementById(modalId);
+  if (el) {
+    el.hidden = true;
+    el.setAttribute('aria-hidden', 'true');
+  }
+}
+
+function openModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) {
+    el.hidden = false;
+    el.setAttribute('aria-hidden', 'false');
+  }
 }
 
 document.getElementById('editDashboardForm').onsubmit = async (e) => {
@@ -707,12 +734,25 @@ document.getElementById('editFeedForm').onsubmit = async (e) => {
   e.preventDefault();
   const id = document.getElementById('editFeedId').value;
   const name = document.getElementById('editFeedName').value.trim();
-  const url = document.getElementById('editFeedUrl').value.trim();
+  const urlRaw = document.getElementById('editFeedUrl').value.trim();
   const logo = document.getElementById('editFeedLogo').value.trim();
+  let validatedUrl = null;
+  if (urlRaw) {
+    try {
+      new URL(urlRaw);
+      validatedUrl = urlRaw;
+    } catch {
+      showToast('Invalid feed URL format', true);
+      return;
+    }
+  } else {
+    showToast('Feed URL is required', true);
+    return;
+  }
   try {
     await api('PUT', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`, {
       name: name || undefined,
-      url: url || undefined,
+      url: validatedUrl,
       logo: logo === '' ? null : logo || undefined,
     });
     showToast('Feed updated');
@@ -726,12 +766,22 @@ document.getElementById('editFeedForm').onsubmit = async (e) => {
 document.getElementById('editContentForm').onsubmit = async (e) => {
   e.preventDefault();
   const id = document.getElementById('editContentId').value;
-  const url = document.getElementById('editContentUrl').value.trim();
+  const urlRaw = document.getElementById('editContentUrl').value.trim();
   const title = document.getElementById('editContentTitle').value.trim();
   const type = document.getElementById('editContentType').value;
+  if (!urlRaw) {
+    showToast('Content URL is required', true);
+    return;
+  }
+  try {
+    new URL(urlRaw);
+  } catch {
+    showToast('Invalid URL format', true);
+    return;
+  }
   try {
     await api('PUT', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`, {
-      url,
+      url: urlRaw,
       title: title || undefined,
       type,
     });
@@ -744,9 +794,23 @@ document.getElementById('editContentForm').onsubmit = async (e) => {
 };
 
 document.getElementById('editDashboardType').onchange = () => {
-  document.getElementById('editDashboardSportRow').hidden =
-    document.getElementById('editDashboardType').value !== 'sports';
+  const isSports = document.getElementById('editDashboardType').value === 'sports';
+  const sportRow = document.getElementById('editDashboardSportRow');
+  sportRow.hidden = !isSports;
+  sportRow.setAttribute('aria-hidden', !isSports);
 };
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const modals = ['editDashboardModal', 'editFeedModal', 'editContentModal'];
+  for (const id of modals) {
+    const el = document.getElementById(id);
+    if (el && !el.hidden) {
+      closeModal(id);
+      break;
+    }
+  }
+});
 
 document.querySelector('#editDashboardModal .modal-backdrop').onclick = () => closeModal('editDashboardModal');
 document.querySelector('#editDashboardModal .btn-cancel').onclick = () => closeModal('editDashboardModal');

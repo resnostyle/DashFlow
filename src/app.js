@@ -25,10 +25,13 @@ const sessionSecret =
 const app = express();
 
 // CORS - configurable via CORS_ORIGIN (comma-separated for multiple; omit or '*' for all)
-const corsOrigin = process.env.CORS_ORIGIN;
-const corsOptions = corsOrigin
-  ? { origin: corsOrigin.split(',').map((o) => o.trim()) }
-  : { origin: '*' };
+const corsOriginRaw = process.env.CORS_ORIGIN;
+let corsOptions;
+if (!corsOriginRaw || corsOriginRaw.trim() === '*') {
+  corsOptions = { origin: '*' };
+} else {
+  corsOptions = { origin: corsOriginRaw.split(',').map((o) => o.trim()) };
+}
 app.use(cors(corsOptions));
 
 // Compression for production
@@ -38,6 +41,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : 0);
 app.use(
   session({
     secret: sessionSecret,

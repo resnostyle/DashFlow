@@ -198,8 +198,15 @@ function updateTicker() {
     
     if (tickerItems.length === 0) {
         tickerContent.innerHTML = '<span class="ticker-item">No news items available</span>';
+        const announcements = document.getElementById('tickerAnnouncements');
+        if (announcements) announcements.textContent = 'No news items available';
         return;
     }
+    
+    // De-duplicated text for screen readers (visual track duplicates for seamless scroll)
+    const deDupedText = tickerItems.map(item => item.title || '').join(' • ');
+    const announcements = document.getElementById('tickerAnnouncements');
+    if (announcements) announcements.textContent = deDupedText;
     
     // Create ticker items HTML - escape user/RSS content to prevent XSS
     const itemsHTML = tickerItems.map((item, index) => {

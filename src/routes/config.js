@@ -102,12 +102,10 @@ router.post('/', async (req, res) => {
     } else {
       const feeds = db.getFeeds(dashboardId);
       if (feeds.length > 0) {
-        try {
-          await rss.fetchFeeds(dashboardId);
-        } catch (err) {
-          console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
-        }
         rss.scheduleDashboard(dashboardId);
+        rss.fetchFeeds(dashboardId).catch((err) => {
+          console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
+        });
       }
     }
   }

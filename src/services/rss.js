@@ -119,6 +119,11 @@ async function fetchFeeds(dashboardId) {
   const feedPromises = feeds.map(async feed => {
     const urlCheck = validateFetchUrl(feed.url);
     if (!urlCheck.valid) {
+      feedHealth[feed.id] = {
+        lastSuccess: feedHealth[feed.id]?.lastSuccess ?? null,
+        lastError: urlCheck.error,
+        errorCount: (feedHealth[feed.id]?.errorCount ?? 0) + 1,
+      };
       console.error(
         `Skipping feed ${feed.url} for dashboard ${dashboardId}: ${urlCheck.error}`,
       );

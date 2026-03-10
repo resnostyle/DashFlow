@@ -147,10 +147,10 @@
         </section>
     </div>
 
-    <div id="editDashboardModal" class="modal" hidden>
+    <div id="editDashboardModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="editDashboardModalTitle" aria-describedby="editDashboardForm" aria-hidden="true" tabindex="-1">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
-            <h3>Edit dashboard</h3>
+            <h3 id="editDashboardModalTitle">Edit dashboard</h3>
             <form id="editDashboardForm">
                 <input type="hidden" id="editDashboardId">
                 <div class="form-row">
@@ -168,7 +168,7 @@
                         <option value="sports">Sports</option>
                     </select>
                 </div>
-                <div class="form-row" id="editDashboardSportRow" hidden>
+                <div class="form-row" id="editDashboardSportRow" hidden aria-hidden="true">
                     <label for="editDashboardSport">Sport</label>
                     <select id="editDashboardSport">
                         <option value="mens">Men's</option>
@@ -183,10 +183,10 @@
         </div>
     </div>
 
-    <div id="editFeedModal" class="modal" hidden>
+    <div id="editFeedModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="editFeedModalTitle" aria-describedby="editFeedForm" aria-hidden="true" tabindex="-1">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
-            <h3>Edit feed</h3>
+            <h3 id="editFeedModalTitle">Edit feed</h3>
             <form id="editFeedForm">
                 <input type="hidden" id="editFeedId">
                 <div class="form-row">
@@ -209,10 +209,10 @@
         </div>
     </div>
 
-    <div id="editContentModal" class="modal" hidden>
+    <div id="editContentModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="editContentModalTitle" aria-describedby="editContentForm" aria-hidden="true" tabindex="-1">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
-            <h3>Edit content</h3>
+            <h3 id="editContentModalTitle">Edit content</h3>
             <form id="editContentForm">
                 <input type="hidden" id="editContentId">
                 <div class="form-row">

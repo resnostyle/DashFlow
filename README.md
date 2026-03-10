@@ -656,7 +656,7 @@ news-ticker/
 - `DATA_DIR` - Path to the data directory for the SQLite database (default: `./data`)
 - `ADMIN_PASSWORD` - When set, protects `/admin` and all `/api/*` routes with session-based authentication. Users must log in at `/admin/login` before accessing the admin UI or API.
 - `ADMIN_SESSION_SECRET` - Secret for signing session cookies (required when `ADMIN_PASSWORD` is set in production; defaults to a dev-only value)
-- `CORS_ORIGIN` - Comma-separated list of allowed origins for CORS. If omitted, allows all origins (`*`). Use in production to restrict API access.
+- `CORS_ORIGIN` - Comma-separated list of allowed origins for CORS. If omitted or set to `*`, allows all origins. This limits which web origins can read API responses in browsers (it does not block server-to-server requests like curl or Postman). For proper API protection, use authentication and authorization in addition to CORS.
 
 ### Building Docker Image
 

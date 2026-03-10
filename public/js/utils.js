@@ -17,8 +17,14 @@ function escapeHtml(str) {
 function safeUrl(url) {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-  return '';
+  try {
+    const parsed = new URL(trimmed);
+    const protocol = parsed.protocol.toLowerCase();
+    if ((protocol !== 'http:' && protocol !== 'https:') || !parsed.hostname) return '';
+    return trimmed;
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -41,12 +47,14 @@ function normalizeTeamColor(color) {
  */
 function darkenHex(hex, amount) {
   if (!hex || !hex.match(/^#[0-9a-fA-F]{6}$/)) return hex || '#0a1628';
+  const amt = Math.max(0, Math.min(1, Number(amount) || 0));
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  const r2 = Math.round(r * amount);
-  const g2 = Math.round(g * amount);
-  const b2 = Math.round(b * amount);
+  const clamp = (v) => Math.min(255, Math.max(0, Math.round(v)));
+  const r2 = clamp(r * amt);
+  const g2 = clamp(g * amt);
+  const b2 = clamp(b * amt);
   return '#' + [r2, g2, b2].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
@@ -58,11 +66,13 @@ function darkenHex(hex, amount) {
  */
 function lightenHex(hex, amount) {
   if (!hex || !hex.match(/^#[0-9a-fA-F]{6}$/)) return hex || '#4a9eff';
+  const amt = Math.max(0, Math.min(1, Number(amount) || 0));
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  const r2 = Math.round(r + (255 - r) * amount);
-  const g2 = Math.round(g + (255 - g) * amount);
-  const b2 = Math.round(b + (255 - b) * amount);
+  const clamp = (v) => Math.min(255, Math.max(0, Math.round(v)));
+  const r2 = clamp(r + (255 - r) * amt);
+  const g2 = clamp(g + (255 - g) * amt);
+  const b2 = clamp(b + (255 - b) * amt);
   return '#' + [r2, g2, b2].map(x => x.toString(16).padStart(2, '0')).join('');
 }

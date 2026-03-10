@@ -15,13 +15,14 @@
                 <p>Add content via the API to display here</p>
             </div>
         </div>
-        <div class="ticker-container" id="tickerContainer" aria-live="polite" aria-atomic="true">
+        <div class="ticker-container" id="tickerContainer" aria-hidden="true">
             <div class="ticker" id="ticker">
                 <div class="ticker-content" id="tickerContent">
                     <span class="ticker-item">Loading news...</span>
                 </div>
             </div>
         </div>
+        <div id="tickerAnnouncements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </div>
     
     <script src="/socket.io/socket.io.js"></script>
