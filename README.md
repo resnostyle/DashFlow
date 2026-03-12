@@ -32,13 +32,13 @@ A containerized Node.js application featuring a real-time RSS news ticker and dy
 cd news-ticker
 
 # Start the application
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop the application
-docker-compose down
+docker compose down
 ```
 
 The application will be available at `http://localhost:3000`
@@ -344,9 +344,13 @@ Response:
   "rotationInterval": 30000,
   "tickerRefreshInterval": 300000,
   "maxTickerItems": 50,
-  "tickerEnabled": true
+  "tickerEnabled": true,
+  "primaryTeamId": 150,
+  "secondaryTeamIds": [153, 152]
 }
 ```
+
+Sports dashboards include `primaryTeamId` and `secondaryTeamIds` (ESPN team IDs). Omitted fields use defaults.
 
 #### Update Configuration
 ```http
@@ -441,11 +445,19 @@ socket.on('dashboard:meta:ncaa-mens', (meta) => {
 ```
 
 #### `sports:update:{dashboard-id}`
-Emitted when sports data is refreshed for a sports dashboard. Contains Duke, UNC, NC State, and ACC data.
+Emitted when sports data is refreshed for a sports dashboard. Contains primary team, secondary teams, and ACC data (default: Duke, UNC, NC State).
 ```javascript
 socket.on('sports:update:ncaa-mens', (data) => {
-  console.log('Duke record:', data.duke.team.record);
+  console.log('Primary team record:', data.primary.team.record);
   console.log('ACC games today:', data.acc.todayGames);
+});
+```
+
+#### `dashboard:error:{dashboard-id}`
+Emitted when dashboard data fails to load (e.g., invalid dashboard ID).
+```javascript
+socket.on('dashboard:error:news', (err) => {
+  console.error('Dashboard load failed:', err.error);
 });
 ```
 ## Admin UI
@@ -584,7 +596,7 @@ The application automatically detects and converts these YouTube URL formats:
 
 Data is stored in SQLite in the `data/` directory:
 
-- `data/news-ticker.db` - SQLite database containing dashboards, feeds, content, and config
+- `data/news-ticker.db` - SQLite database containing dashboards, feeds, content, config, and sessions (when `ADMIN_PASSWORD` is set)
 
 **Migration Note**: On first run after upgrading, existing data in JSON files (`data/dashboards.json`, `data/dashboards/{id}/feeds.json`, `data/content.json`, `data/config.json`, or legacy flat files) will be automatically migrated to SQLite. The old JSON files remain for reference but are no longer used.
 
@@ -617,6 +629,8 @@ news-ticker/
 │   ├── middleware.js      # Shared middleware
 │   ├── middleware/
 │   │   └── auth.js        # Admin authentication middleware
+│   ├── utils/
+│   │   └── urlValidation.js  # URL validation for feeds and content
 │   ├── routes/            # API route handlers
 │   │   ├── config.js
 │   │   ├── content.js
@@ -626,7 +640,8 @@ news-ticker/
 │   │   └── ticker.js
 │   └── services/          # Business logic
 │       ├── espn.js        # ESPN API client (mens + womens NCAA basketball)
-│       └── rss.js         # RSS feed fetching & caching
+│       ├── rss.js         # RSS feed fetching & caching
+│       └── sports-refresh.js  # Periodic sports data refresh (5 min interval)
 ├── tests/                 # Test suite
 │   ├── setup.js           # Test environment setup
 │   ├── helpers.js         # Shared test utilities
@@ -637,6 +652,7 @@ news-ticker/
 │   ├── feeds.test.js
 │   ├── health.test.js
 │   ├── auth.test.js       # Admin authentication tests
+│   ├── sports.test.js    # NCAA basketball sports API tests
 │   └── ticker.test.js
 └── public/                # Frontend files
     ├── index.html         # Display page
@@ -646,8 +662,10 @@ news-ticker/
     │   ├── style.css
     │   └── admin.css
     └── js/
-        ├── app.js         # Display logic
-        └── admin.js       # Admin UI logic
+        ├── app.js             # Display logic
+        ├── admin.js            # Admin UI logic
+        ├── sports-dashboard.js # NCAA basketball dashboard UI
+        └── utils.js            # Shared utilities
 ```
 
 ### Environment Variables
@@ -690,10 +708,10 @@ Test files are in the `tests/` directory with coverage for all API routes, the d
 
 ### Continuous Integration
 
-A GitHub Actions workflow (`.github/workflows/test.yml`) runs the test suite automatically on:
+GitHub Actions workflows run automatically:
 
-- Pushes to `main` / `master`
-- All pull requests
+- **Tests** (`.github/workflows/test.yml`): Runs the test suite on pushes to `main`/`master` and all pull requests
+- **Docker Build** (`.github/workflows/docker-build.yml`): Builds and pushes the Docker image to GitHub Container Registry (ghcr.io) on pushes to `main`/`master`
 
 ### Mise Task Runner
 
@@ -718,6 +736,7 @@ Using mise is entirely optional; standard `npm` commands work the same way.
 - URL validation before processing
 - CORS enabled (configure for production use)
 - Optional session-based authentication: set `ADMIN_PASSWORD` to protect `/admin` and `/api/*` routes; set `ADMIN_SESSION_SECRET` in production
+- Login rate limiting: 5 attempts per 15 minutes per IP to prevent brute-force attacks
 
 ## Browser Compatibility
 
