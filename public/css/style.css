@@ -1,18 +1,4 @@
-/* Color scheme */
-:root {
-    --bg-primary: #0a0a0a;
-    --bg-surface: #141414;
-    --bg-elevated: #1a1a1a;
-    --border-subtle: #262626;
-    --border-default: #333;
-    --border-muted: #404040;
-    --text-primary: #fafafa;
-    --text-secondary: #a3a3a3;
-    --text-muted: #737373;
-    --accent: #0ea5e9;
-    --accent-hover: #38bdf8;
-    --accent-muted: rgba(14, 165, 233, 0.15);
-}
+/* Color scheme from theme.css (loaded via HTML) */
 
 /* Screen-reader only: visually hidden but announced by assistive tech */
 .sr-only {
@@ -939,7 +925,7 @@ body {
     
     .ticker-item {
         font-size: 1.3rem;
-        padding: 0 30px;
+        padding: 0 24px;
         gap: 8px;
     }
     

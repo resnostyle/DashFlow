@@ -1,24 +1,4 @@
-/* Admin page styles - uses refreshed color scheme */
-
-:root {
-    --bg-primary: #0a0a0a;
-    --bg-surface: #141414;
-    --bg-elevated: #1a1a1a;
-    --bg-input: #1c1c1c;
-    --border-subtle: #262626;
-    --border-default: #333;
-    --border-muted: #404040;
-    --text-primary: #fafafa;
-    --text-secondary: #a3a3a3;
-    --text-muted: #737373;
-    --accent: #0ea5e9;
-    --accent-hover: #38bdf8;
-    --accent-muted: rgba(14, 165, 233, 0.15);
-    --success-bg: #14532d;
-    --success-border: #166534;
-    --error-bg: #450a0a;
-    --error-border: #7f1d1d;
-}
+/* Admin page styles - uses theme.css (loaded via HTML) */
 
 body {
   overflow: auto;
@@ -159,7 +139,9 @@ body {
 }
 
 .admin-form input:focus,
-.admin-form select:focus {
+.admin-form select:focus,
+.admin-form textarea:focus,
+.bulk-import-row textarea:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-muted);
@@ -438,6 +420,7 @@ body {
   padding: 1.5rem;
   max-width: 400px;
   width: 100%;
+  color: var(--text-primary);
 }
 
 .modal-content h3 {
