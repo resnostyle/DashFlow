@@ -1,5 +1,6 @@
 const Parser = require('rss-parser');
 const db = require('../db');
+const { validateFetchUrl } = require('../utils/urlValidation');
 
 const parser = new Parser({
   customFields: {
@@ -28,11 +29,16 @@ function extractImageUrl(item) {
 }
 
 let io = null;
-let refreshInterval = null;
+
+// Per-dashboard refresh timers
+const dashboardTimers = new Map();
 
 // In-memory ticker items keyed by dashboard ID (transient, not persisted)
 const tickerItems = {};
 const lastFetchTime = {};
+
+// Feed health: { [feedId]: { lastSuccess, lastError, errorCount } }
+const feedHealth = {};
 
 function init(socketIo) {
   io = socketIo;
@@ -42,9 +48,57 @@ function getTickerItems(dashboardId) {
   return tickerItems[dashboardId] || [];
 }
 
-function clearTickerItems(dashboardId) {
+function unscheduleDashboard(dashboardId) {
+  const timer = dashboardTimers.get(dashboardId);
+  if (timer) {
+    clearInterval(timer);
+    dashboardTimers.delete(dashboardId);
+  }
+}
+
+function scheduleDashboard(dashboardId) {
+  unscheduleDashboard(dashboardId);
+
+  const feeds = db.getFeeds(dashboardId);
+  const config = db.getConfig(dashboardId);
+
+  if (!config.tickerEnabled || feeds.length === 0) {
+    return;
+  }
+
+  const intervalMs = Math.max(60000, config.tickerRefreshInterval);
+  const timer = setInterval(() => fetchFeeds(dashboardId), intervalMs);
+  dashboardTimers.set(dashboardId, timer);
+}
+
+function clearTickerItems(dashboardId, feedIdsToClear = null) {
   delete tickerItems[dashboardId];
   delete lastFetchTime[dashboardId];
+  unscheduleDashboard(dashboardId);
+  const ids = feedIdsToClear ?? db.getFeeds(dashboardId).map(f => f.id);
+  for (const fid of ids) {
+    delete feedHealth[fid];
+  }
+}
+
+function getFeedHealth(dashboardId) {
+  const feeds = db.getFeeds(dashboardId);
+  const result = {};
+  for (const f of feeds) {
+    const h = feedHealth[f.id];
+    result[f.id] = h
+      ? {
+          lastSuccess: h.lastSuccess,
+          lastError: h.lastError,
+          errorCount: h.errorCount,
+        }
+      : { lastSuccess: null, lastError: null, errorCount: 0 };
+  }
+  return result;
+}
+
+function clearFeedHealth(feedId) {
+  delete feedHealth[feedId];
 }
 
 function emitToDashboard(dashboardId, event, data) {
@@ -63,8 +117,25 @@ async function fetchFeeds(dashboardId) {
 
   const allItems = [];
   const feedPromises = feeds.map(async feed => {
+    const urlCheck = validateFetchUrl(feed.url);
+    if (!urlCheck.valid) {
+      feedHealth[feed.id] = {
+        lastSuccess: feedHealth[feed.id]?.lastSuccess ?? null,
+        lastError: urlCheck.error,
+        errorCount: (feedHealth[feed.id]?.errorCount ?? 0) + 1,
+      };
+      console.error(
+        `Skipping feed ${feed.url} for dashboard ${dashboardId}: ${urlCheck.error}`,
+      );
+      return [];
+    }
     try {
       const feedData = await parser.parseURL(feed.url);
+      feedHealth[feed.id] = {
+        lastSuccess: Date.now(),
+        lastError: null,
+        errorCount: 0,
+      };
       if (feedData?.items) {
         return feedData.items.map(item => ({
           id: `${feed.id}-${item.guid || item.link || Date.now()}`,
@@ -79,6 +150,12 @@ async function fetchFeeds(dashboardId) {
         }));
       }
     } catch (error) {
+      const prev = feedHealth[feed.id] || { errorCount: 0 };
+      feedHealth[feed.id] = {
+        lastSuccess: prev.lastSuccess ?? null,
+        lastError: error.message,
+        errorCount: prev.errorCount + 1,
+      };
       console.error(
         `Error fetching feed ${feed.url} for dashboard ${dashboardId}:`,
         error.message,
@@ -106,30 +183,19 @@ async function fetchFeeds(dashboardId) {
 
 async function fetchAllFeeds() {
   const dashboardIds = db.getTickerEnabledDashboards();
-  const now = Date.now();
-
-  const toFetch = [];
-  for (const id of dashboardIds) {
-    const config = db.getConfig(id);
-    const lastFetch = lastFetchTime[id] ?? 0;
-    if (now - lastFetch >= config.tickerRefreshInterval) {
-      toFetch.push(id);
-    }
-  }
-
-  await Promise.all(toFetch.map(id => fetchFeeds(id)));
+  await Promise.all(dashboardIds.map(id => fetchFeeds(id)));
 }
 
 function startRefreshLoop() {
-  if (refreshInterval) clearInterval(refreshInterval);
-  const intervalMs = Math.max(60000, db.getMinTickerRefreshInterval());
-  refreshInterval = setInterval(() => fetchAllFeeds(), intervalMs);
+  const dashboardIds = db.getTickerEnabledDashboards();
+  for (const id of dashboardIds) {
+    scheduleDashboard(id);
+  }
 }
 
 function stopRefreshLoop() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-    refreshInterval = null;
+  for (const id of [...dashboardTimers.keys()]) {
+    unscheduleDashboard(id);
   }
 }
 
@@ -141,10 +207,13 @@ function restartRefreshLoop() {
 module.exports = {
   init,
   getTickerItems,
+  getFeedHealth,
+  clearFeedHealth,
   clearTickerItems,
   fetchFeeds,
   fetchAllFeeds,
   startRefreshLoop,
   stopRefreshLoop,
   restartRefreshLoop,
+  scheduleDashboard,
 };

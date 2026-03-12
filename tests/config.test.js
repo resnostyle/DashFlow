@@ -1,10 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { getApp } from './helpers.js';
 
-const { app } = getApp();
-
 describe('Config API', () => {
+  let app;
+  let rss;
+
+  beforeEach(() => {
+    const instance = getApp();
+    app = instance.app;
+    rss = instance.rss;
+  });
+
   describe('GET /api/config', () => {
     it('returns default config', async () => {
       const res = await request(app)
@@ -49,6 +56,15 @@ describe('Config API', () => {
       expect(res.body.tickerRefreshInterval).toBe(120000);
     });
 
+    it('calls restartRefreshLoop when tickerRefreshInterval changes', async () => {
+      rss.restartRefreshLoop.mockClear();
+      await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerRefreshInterval: 180000 });
+      expect(rss.restartRefreshLoop).toHaveBeenCalled();
+    });
+
     it('updates max ticker items', async () => {
       const res = await request(app)
         .post('/api/config')
@@ -65,6 +81,54 @@ describe('Config API', () => {
         .send({ tickerEnabled: false });
       expect(res.status).toBe(200);
       expect(res.body.tickerEnabled).toBe(false);
+    });
+
+    it('coerces tickerEnabled from string "true" and "false"', async () => {
+      const resTrue = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 'true' });
+      expect(resTrue.status).toBe(200);
+      expect(resTrue.body.tickerEnabled).toBe(true);
+
+      const resFalse = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 'false' });
+      expect(resFalse.status).toBe(200);
+      expect(resFalse.body.tickerEnabled).toBe(false);
+    });
+
+    it('coerces tickerEnabled from number 1 and 0', async () => {
+      const resOne = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 1 });
+      expect(resOne.status).toBe(200);
+      expect(resOne.body.tickerEnabled).toBe(true);
+
+      const resZero = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: 0 });
+      expect(resZero.status).toBe(200);
+      expect(resZero.body.tickerEnabled).toBe(false);
+    });
+
+    it('coerces tickerEnabled from string "1" and "0"', async () => {
+      const resOne = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: '1' });
+      expect(resOne.status).toBe(200);
+      expect(resOne.body.tickerEnabled).toBe(true);
+
+      const resZero = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ tickerEnabled: '0' });
+      expect(resZero.status).toBe(200);
+      expect(resZero.body.tickerEnabled).toBe(false);
     });
 
     it('enforces minimum rotation interval of 5000', async () => {
@@ -109,12 +173,13 @@ describe('Config API', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 400 for invalid tickerEnabled type', async () => {
+    it('returns 400 for invalid tickerEnabled value', async () => {
       const res = await request(app)
         .post('/api/config')
         .query({ dashboard: 'default' })
-        .send({ tickerEnabled: 'yes' });
+        .send({ tickerEnabled: 'off' });
       expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/tickerEnabled/);
     });
 
     it('returns 404 for non-existent dashboard', async () => {
@@ -167,6 +232,28 @@ describe('Config API', () => {
         .query({ dashboard: 'ncaa-mens' })
         .send({ secondaryTeamIds: [] });
       expect(res.status).toBe(400);
+    });
+
+    it('calls scheduleDashboard when enabling ticker for dashboard with feeds', async () => {
+      await request(app)
+        .post('/api/dashboards')
+        .send({ id: 'config-schedule-test', name: 'Config Schedule Test' });
+      await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'config-schedule-test' })
+        .send({ url: 'https://example.com/config-feed' });
+      await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'config-schedule-test' })
+        .send({ tickerEnabled: false });
+
+      rss.scheduleDashboard.mockClear();
+      await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'config-schedule-test' })
+        .send({ tickerEnabled: true });
+
+      expect(rss.scheduleDashboard).toHaveBeenCalledWith('config-schedule-test');
     });
   });
 });

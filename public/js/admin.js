@@ -33,24 +33,45 @@ function showToast(message, isError = false) {
   }, 4000);
 }
 
+function setLoading(show) {
+  document.getElementById('adminLoading').hidden = !show;
+}
+
+function setError(message) {
+  const el = document.getElementById('adminError');
+  el.textContent = message || '';
+  el.hidden = !message;
+}
+
 /**
  * Perform an HTTP request against the configured API base and return the parsed JSON response.
+ * Shows loading state during the request.
  * @param {string} method - HTTP method (e.g., "GET", "POST", "PUT", "DELETE").
  * @param {string} path - Path appended to the API base (should begin with '/').
  * @param {any} [body] - Optional request payload which will be JSON-stringified and sent with a Content-Type of application/json.
  * @returns {any} The parsed JSON response from the server (or an empty object when response body is not valid JSON).
  * @throws {Error} When the response has a non-ok HTTP status; the error message is taken from the response `error` field or `HTTP {status}`.
  */
-async function api(method, path, body) {
-  const opts = { method, headers: {} };
-  if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
+async function api(method, path, body, options = {}) {
+  const showLoading = options.loading !== false && ['POST', 'PUT', 'DELETE'].includes(method);
+  if (showLoading) setLoading(true);
+  setError('');
+  try {
+    const opts = { method, headers: {} };
+    if (body) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(API + path, opts);
+    const data = res.ok ? await res.json().catch(() => ({})) : await res.json().catch(() => ({ error: res.statusText }));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  } catch (err) {
+    if (options.showError !== false) setError(err.message);
+    throw err;
+  } finally {
+    if (showLoading) setLoading(false);
   }
-  const res = await fetch(API + path, opts);
-  const data = res.ok ? await res.json().catch(() => ({})) : await res.json().catch(() => ({ error: res.statusText }));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
 }
 
 /**
@@ -163,14 +184,13 @@ async function createDashboard(e) {
 }
 
 /**
- * Update a dashboard's name and description on the server and refresh the dashboards list.
+ * Update a dashboard on the server and refresh the dashboards list.
  * @param {string} id - The dashboard identifier to update.
- * @param {string} name - The new display name for the dashboard.
- * @param {string} description - The new description for the dashboard.
+ * @param {Object} data - Fields to update: name, description, type, sport.
  */
-async function updateDashboard(id, name, description) {
+async function updateDashboard(id, data) {
   try {
-    await api('PUT', `/dashboards/${encodeURIComponent(id)}`, { name, description });
+    await api('PUT', `/dashboards/${encodeURIComponent(id)}`, data);
     showToast('Dashboard updated');
     await loadDashboards();
   } catch (err) {
@@ -196,19 +216,24 @@ async function deleteDashboard(id) {
 }
 
 /**
- * Prompts the user to edit the dashboard's name and description and updates it when confirmed.
- *
- * If the dashboard id is not found or the user cancels either prompt, no action is taken.
+ * Open the edit dashboard modal for the given dashboard.
  * @param {string} id - The dashboard identifier to edit.
  */
 function editDashboard(id) {
-  const d = Array.from(document.querySelectorAll('#dashboardsList .admin-list-item')).find(el => el.dataset.id === id);
+  const d = dashboardsList.find(x => x.id === id);
   if (!d) return;
-  const name = prompt('Dashboard name:', d.querySelector('strong').textContent);
-  if (name === null) return;
-  const description = prompt('Description:', '');
-  if (description === null) return;
-  updateDashboard(id, name, description);
+  document.getElementById('editDashboardId').value = id;
+  document.getElementById('editDashboardName').value = d.name || '';
+  document.getElementById('editDashboardDesc').value = d.description || '';
+  document.getElementById('editDashboardType').value = d.type || 'default';
+  document.getElementById('editDashboardSport').value = d.sport || 'mens';
+  const sportRow = document.getElementById('editDashboardSportRow');
+  sportRow.hidden = d.type !== 'sports';
+  sportRow.setAttribute('aria-hidden', d.type !== 'sports');
+  openModal('editDashboardModal');
+  const nameInput = document.getElementById('editDashboardName');
+  nameInput.focus();
+  nameInput.select();
 }
 
 /**
@@ -216,8 +241,11 @@ function editDashboard(id) {
  */
 async function loadFeeds() {
   const dashboardId = getDashboardId();
-  const list = await api('GET', `/feeds?dashboard=${encodeURIComponent(dashboardId)}`);
-  renderFeedsList(list);
+  const [list, health] = await Promise.all([
+    api('GET', `/feeds?dashboard=${encodeURIComponent(dashboardId)}`),
+    api('GET', `/feeds/health?dashboard=${encodeURIComponent(dashboardId)}`).catch(() => ({})),
+  ]);
+  renderFeedsList(list, health);
 }
 
 /**
@@ -227,11 +255,9 @@ async function loadFeeds() {
  * shows a "No feeds" message when the list is empty, and attaches click handlers that delete
  * the corresponding feed when its Delete button is clicked.
  * @param {Array<Object>} list - Array of feed objects to render.
- * @param {string} list[].id - Unique identifier of the feed.
- * @param {string} [list[].name] - Display name of the feed; may be absent.
- * @param {string} list[].url - URL of the feed.
+ * @param {Object} [health] - Feed health data keyed by feed id.
  */
-function renderFeedsList(list) {
+function renderFeedsList(list, health = {}) {
   const el = document.getElementById('feedsList');
   el.textContent = '';
   if (list.length === 0) {
@@ -242,14 +268,29 @@ function renderFeedsList(list) {
     return;
   }
   for (const f of list) {
+    const h = health[f.id] || {};
+    const status = h.lastError ? 'error' : (h.lastSuccess ? 'ok' : 'pending');
+    const statusTitle = h.lastError
+      ? `Error: ${h.lastError}${h.errorCount > 1 ? ` (${h.errorCount} failures)` : ''}`
+      : h.lastSuccess
+        ? `Last OK: ${new Date(h.lastSuccess).toLocaleString()}`
+        : 'Not yet fetched';
     const item = document.createElement('div');
     item.className = 'admin-list-item';
     item.setAttribute('data-id', f.id);
     const span = document.createElement('span');
+    const statusEl = document.createElement('span');
+    statusEl.className = `feed-status feed-status-${status}`;
+    statusEl.title = statusTitle;
+    statusEl.setAttribute('aria-label', statusTitle);
+    span.appendChild(statusEl);
+    const textSpan = document.createElement('span');
+    textSpan.className = 'feed-list-text';
     const strong = document.createElement('strong');
     strong.textContent = f.name || 'Unnamed';
-    span.appendChild(strong);
-    span.appendChild(document.createTextNode(' — ' + f.url));
+    textSpan.appendChild(strong);
+    textSpan.appendChild(document.createTextNode(' — ' + f.url));
+    span.appendChild(textSpan);
     item.appendChild(span);
     const actions = document.createElement('div');
     actions.className = 'admin-list-actions';
@@ -271,17 +312,15 @@ function renderFeedsList(list) {
 }
 
 /**
- * Prompt the user to edit a feed's name, URL, and logo, then update via the API.
+ * Open the edit feed modal for the given feed.
  * @param {Object} feed - The feed object with id, name, url, logo.
  */
 function editFeed(feed) {
-  const name = prompt('Feed name:', feed.name || '');
-  if (name === null) return;
-  const url = prompt('Feed URL:', feed.url || '');
-  if (url === null) return;
-  const logo = prompt('Logo URL (leave empty for none):', feed.logo || '');
-  if (logo === null) return;
-  updateFeed(feed.id, { name: name || undefined, url: url || undefined, logo: logo === '' ? null : (logo || undefined) });
+  document.getElementById('editFeedId').value = feed.id;
+  document.getElementById('editFeedName').value = feed.name || '';
+  document.getElementById('editFeedUrl').value = feed.url || '';
+  document.getElementById('editFeedLogo').value = feed.logo || '';
+  openModal('editFeedModal');
 }
 
 /**
@@ -330,12 +369,75 @@ async function addFeed(e) {
 }
 
 /**
+ * Bulk import feeds from pasted URLs (one per line).
+ */
+async function bulkImportFeeds() {
+  const textarea = document.getElementById('bulkFeedUrls');
+  const raw = textarea.value.trim();
+  if (!raw) {
+    showToast('Paste at least one feed URL', true);
+    return;
+  }
+  const urls = raw
+    .split(/\r?\n/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+  const valid = [];
+  const invalid = [];
+  for (const u of urls) {
+    try {
+      new URL(u);
+      valid.push(u);
+    } catch {
+      invalid.push(u);
+    }
+  }
+  if (invalid.length > 0) {
+    showToast(`Invalid URLs (${invalid.length}): ${invalid.slice(0, 2).join(', ')}${invalid.length > 2 ? '...' : ''}`, true);
+    return;
+  }
+  const dashboardId = getDashboardId();
+  const CONCURRENCY = 8;
+  const tasks = valid.map((url) => () =>
+    api('POST', `/feeds?dashboard=${encodeURIComponent(dashboardId)}`, { url }, { showError: false }),
+  );
+  const runWithLimit = async (limit) => {
+    const executing = [];
+    const results = [];
+    for (const task of tasks) {
+      const p = Promise.resolve().then(task).then((r) => ({ ok: true })).catch(() => ({ ok: false }));
+      results.push(p);
+      const e = p.then(() => {
+        executing.splice(executing.indexOf(e), 1);
+      });
+      executing.push(e);
+      if (executing.length >= limit) {
+        await Promise.race(executing);
+      }
+    }
+    return Promise.all(results);
+  };
+  const settled = await runWithLimit(CONCURRENCY);
+  const created = settled.filter((r) => r.ok).length;
+  const failed = settled.filter((r) => !r.ok).length;
+  textarea.value = '';
+  if (created > 0) {
+    showToast(`Imported ${created} feed(s)${failed > 0 ? `, ${failed} failed` : ''}`);
+    await loadFeeds();
+  }
+  if (failed > 0 && created === 0) {
+    showToast(`All ${failed} import(s) failed`, true);
+  }
+}
+
+/**
  * Remove a feed by its id from the currently selected dashboard.
  *
- * Deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
+ * Prompts for confirmation, then deletes the feed, shows a success toast and reloads the feeds list on success; on error shows an error toast.
  * @param {string} id - The feed identifier to delete.
  */
 async function deleteFeed(id) {
+  if (!confirm('Delete this feed?')) return;
   try {
     await api('DELETE', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Feed deleted');
@@ -403,22 +505,15 @@ function renderContentList(list) {
 }
 
 /**
- * Prompt the user to edit a content item's URL, title, and type, then update via the API.
+ * Open the edit content modal for the given content item.
  * @param {Object} content - The content object with id, url, title, type.
  */
 function editContent(content) {
-  const url = prompt('Content URL:', content.url || '');
-  if (url === null) return;
-  const title = prompt('Title:', content.title || '');
-  if (title === null) return;
-  const type = prompt('Type (webpage or youtube):', content.type || 'webpage');
-  if (type === null) return;
-  const normalizedType = type.trim().toLowerCase();
-  if (normalizedType !== 'webpage' && normalizedType !== 'youtube') {
-    showToast('Type must be webpage or youtube', true);
-    return;
-  }
-  updateContent(content.id, { url: url || undefined, title: title || undefined, type: normalizedType });
+  document.getElementById('editContentId').value = content.id;
+  document.getElementById('editContentUrl').value = content.url || '';
+  document.getElementById('editContentTitle').value = content.title || '';
+  document.getElementById('editContentType').value = content.type || 'webpage';
+  openModal('editContentModal');
 }
 
 /**
@@ -472,10 +567,11 @@ async function addContent(e) {
 /**
  * Delete a content item from the currently selected dashboard.
  *
- * On success, displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
+ * Prompts for confirmation, then on success displays a success toast and refreshes the content list; on failure, displays an error toast with the failure message.
  * @param {string} id - The ID of the content item to delete.
  */
 async function deleteContent(id) {
+  if (!confirm('Delete this content item?')) return;
   try {
     await api('DELETE', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`);
     showToast('Content deleted');
@@ -597,6 +693,172 @@ document.getElementById('createDashboardForm').onsubmit = createDashboard;
 document.getElementById('addFeedForm').onsubmit = addFeed;
 document.getElementById('addContentForm').onsubmit = addContent;
 document.getElementById('configForm').onsubmit = saveConfig;
+document.getElementById('bulkImportBtn').onclick = bulkImportFeeds;
+
+const FOCUSABLE_SELECTOR = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+function getFocusables(container) {
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) => !el.hidden && !el.disabled,
+  );
+}
+
+let focusTrapHandler = null;
+let previousFocus = null;
+
+function closeModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) {
+    el.hidden = true;
+    el.setAttribute('aria-hidden', 'true');
+    if (focusTrapHandler) {
+      el.removeEventListener('keydown', focusTrapHandler);
+      focusTrapHandler = null;
+    }
+    if (previousFocus && typeof previousFocus.focus === 'function') {
+      previousFocus.focus();
+      previousFocus = null;
+    }
+  }
+}
+
+function openModal(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) {
+    previousFocus = document.activeElement;
+    el.hidden = false;
+    el.setAttribute('aria-hidden', 'false');
+    const focusables = getFocusables(el);
+    const first = focusables[0];
+    if (first) {
+      first.focus();
+    }
+    focusTrapHandler = (e) => {
+      if (e.key !== 'Tab') return;
+      const focusables = getFocusables(el);
+      if (focusables.length === 0) return;
+      const idx = focusables.indexOf(document.activeElement);
+      if (e.shiftKey) {
+        const next = idx <= 0 ? focusables[focusables.length - 1] : focusables[idx - 1];
+        next?.focus();
+        e.preventDefault();
+      } else {
+        const next = idx < 0 || idx >= focusables.length - 1 ? focusables[0] : focusables[idx + 1];
+        next?.focus();
+        e.preventDefault();
+      }
+    };
+    el.addEventListener('keydown', focusTrapHandler);
+  }
+}
+
+document.getElementById('editDashboardForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editDashboardId').value;
+  const name = document.getElementById('editDashboardName').value.trim();
+  if (!name) {
+    showToast('Dashboard name is required', true);
+    return;
+  }
+  const type = document.getElementById('editDashboardType').value;
+  const sport = type === 'sports' ? document.getElementById('editDashboardSport').value : undefined;
+  await updateDashboard(id, {
+    name,
+    description: document.getElementById('editDashboardDesc').value.trim(),
+    type,
+    sport,
+  });
+  closeModal('editDashboardModal');
+};
+
+document.getElementById('editFeedForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editFeedId').value;
+  const name = document.getElementById('editFeedName').value.trim();
+  const urlRaw = document.getElementById('editFeedUrl').value.trim();
+  const logo = document.getElementById('editFeedLogo').value.trim();
+  let validatedUrl = null;
+  if (urlRaw) {
+    try {
+      new URL(urlRaw);
+      validatedUrl = urlRaw;
+    } catch {
+      showToast('Invalid feed URL format', true);
+      return;
+    }
+  } else {
+    showToast('Feed URL is required', true);
+    return;
+  }
+  try {
+    await api('PUT', `/feeds/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`, {
+      name: name || undefined,
+      url: validatedUrl,
+      logo: logo === '' ? null : logo || undefined,
+    });
+    showToast('Feed updated');
+    closeModal('editFeedModal');
+    await loadFeeds();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+};
+
+document.getElementById('editContentForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editContentId').value;
+  const urlRaw = document.getElementById('editContentUrl').value.trim();
+  const title = document.getElementById('editContentTitle').value.trim();
+  const type = document.getElementById('editContentType').value;
+  if (!urlRaw) {
+    showToast('Content URL is required', true);
+    return;
+  }
+  try {
+    new URL(urlRaw);
+  } catch {
+    showToast('Invalid URL format', true);
+    return;
+  }
+  try {
+    await api('PUT', `/content/${encodeURIComponent(id)}?dashboard=${encodeURIComponent(getDashboardId())}`, {
+      url: urlRaw,
+      title: title || undefined,
+      type,
+    });
+    showToast('Content updated');
+    closeModal('editContentModal');
+    await loadContent();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+};
+
+document.getElementById('editDashboardType').onchange = () => {
+  const isSports = document.getElementById('editDashboardType').value === 'sports';
+  const sportRow = document.getElementById('editDashboardSportRow');
+  sportRow.hidden = !isSports;
+  sportRow.setAttribute('aria-hidden', !isSports);
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const modals = ['editDashboardModal', 'editFeedModal', 'editContentModal'];
+  for (const id of modals) {
+    const el = document.getElementById(id);
+    if (el && !el.hidden) {
+      closeModal(id);
+      break;
+    }
+  }
+});
+
+document.querySelector('#editDashboardModal .modal-backdrop').onclick = () => closeModal('editDashboardModal');
+document.querySelector('#editDashboardModal .btn-cancel').onclick = () => closeModal('editDashboardModal');
+document.querySelector('#editFeedModal .modal-backdrop').onclick = () => closeModal('editFeedModal');
+document.querySelector('#editFeedModal .btn-cancel').onclick = () => closeModal('editFeedModal');
+document.querySelector('#editContentModal .modal-backdrop').onclick = () => closeModal('editContentModal');
+document.querySelector('#editContentModal .btn-cancel').onclick = () => closeModal('editContentModal');
 
 document.getElementById('dashboardSelect').onchange = async () => {
   updateViewDashboardLink();

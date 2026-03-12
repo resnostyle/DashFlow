@@ -607,6 +607,14 @@ function close() {
   db.close();
 }
 
+function cleanupExpiredSessions() {
+  const now = Math.floor(Date.now() / 1000);
+  const result = db.prepare('DELETE FROM sessions WHERE expire < ?').run(now);
+  if (result.changes > 0) {
+    console.log(`Cleaned up ${result.changes} expired session(s)`);
+  }
+}
+
 /**
  * Create an express-session store that persists sessions in SQLite.
  * @returns {import('express-session').Store}
@@ -661,8 +669,11 @@ function getRawDb() {
 }
 
 module.exports = {
+  DATA_DIR,
+  DB_PATH,
   initialize,
   close,
+  cleanupExpiredSessions,
   createSessionStore,
   getRawDb,
   getAllDashboards,

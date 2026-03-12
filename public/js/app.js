@@ -1,3 +1,9 @@
+// utils.js must be loaded before app.js (provides escapeHtml, safeUrl)
+if (typeof safeUrl !== 'function' || typeof escapeHtml !== 'function') {
+  const missing = [typeof safeUrl !== 'function' && 'safeUrl', typeof escapeHtml !== 'function' && 'escapeHtml'].filter(Boolean);
+  throw new Error(`utils.js must be loaded before app.js; missing: ${missing.join(', ')}`);
+}
+
 // WebSocket connection
 const socket = io();
 
@@ -10,6 +16,12 @@ function getDashboardIdFromUrl() {
 
 // State
 const dashboardId = getDashboardIdFromUrl();
+
+// Kiosk mode: hide Manage link when ?kiosk=1
+if (new URLSearchParams(window.location.search).get('kiosk') === '1') {
+    const manageLink = document.getElementById('manageLink');
+    if (manageLink) manageLink.style.display = 'none';
+}
 let currentContentIndex = 0;
 let contentItems = [];
 let tickerItems = [];
@@ -84,12 +96,16 @@ function createContentElement(item) {
             iframe.allowFullscreen = true;
             div.appendChild(iframe);
         } else {
-            div.innerHTML = `<p>Invalid YouTube URL: ${item.url}</p>`;
+            if (item.url) console.warn('Unable to embed video:', item.url);
+            const p = document.createElement('p');
+            p.textContent = 'Unable to embed video';
+            div.appendChild(p);
         }
     } else {
-        // Regular webpage iframe
+        // Regular webpage iframe - use safeUrl to prevent XSS
+        const safe = typeof safeUrl === 'function' ? safeUrl(item.url) : (item.url || '');
         const iframe = document.createElement('iframe');
-        iframe.src = item.url;
+        iframe.src = safe || 'about:blank';
         iframe.allowFullscreen = true;
         div.appendChild(iframe);
     }
@@ -184,22 +200,33 @@ function updateTicker() {
     
     if (tickerItems.length === 0) {
         tickerContent.innerHTML = '<span class="ticker-item">No news items available</span>';
+        const announcements = document.getElementById('tickerAnnouncements');
+        if (announcements) announcements.textContent = 'No news items available';
         return;
     }
     
-    // Create ticker items HTML
-    const itemsHTML = tickerItems.map((item, index) => {
-        const link = item.link ? `<a href="${item.link}" target="_blank" rel="noopener">${item.title}</a>` : item.title;
-        const logo = item.feedLogo ? `<img src="${item.feedLogo}" alt="${item.feedName}" class="ticker-logo" />` : '';
-        const separator = index < tickerItems.length - 1 ? '<span class="ticker-separator">•</span>' : '';
-        return `<span class="ticker-item" data-feed-id="${item.feedId || ''}">${logo}${link}</span>${separator}`;
-    }).join('');
+    // De-duplicated text for screen readers (visual track duplicates for seamless scroll)
+    const deDupedText = tickerItems.map(item => item.title || '').join(' • ');
+    const announcements = document.getElementById('tickerAnnouncements');
+    if (announcements) announcements.textContent = deDupedText;
     
-    // Duplicate content for seamless loop
-    tickerContent.innerHTML = itemsHTML + itemsHTML;
+    // Create ticker items HTML - escape user/RSS content to prevent XSS
+    const makeItemHtml = (item, index, nonInteractive) => {
+        const safeLink = safeUrl(item.link);
+        const safeLogo = safeUrl(item.feedLogo);
+        const linkAttrs = nonInteractive ? ' tabindex="-1" role="presentation"' : '';
+        const link = safeLink ? `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener"${linkAttrs}>${escapeHtml(item.title || '')}</a>` : escapeHtml(item.title || '');
+        const logo = safeLogo ? `<img src="${escapeHtml(safeLogo)}" alt="${escapeHtml(item.feedName || '')}" class="ticker-logo" />` : '';
+        const separator = index < tickerItems.length - 1 ? '<span class="ticker-separator">•</span>' : '';
+        return `<span class="ticker-item" data-feed-id="${escapeHtml(String(item.feedId || ''))}">${logo}${link}</span>${separator}`;
+    };
+    const itemsHTML = tickerItems.map((item, index) => makeItemHtml(item, index, false)).join('');
+    const clonedHTML = tickerItems.map((item, index) => makeItemHtml(item, index, true)).join('');
+    // Duplicate content for seamless loop; cloned half is non-interactive for keyboard/screen readers
+    tickerContent.innerHTML = itemsHTML + `<span class="ticker-clone" aria-hidden="true">${clonedHTML}</span>`;
     
     // Calculate animation duration based on content width
-    const contentWidth = tickerContent.scrollWidth / 2; // Divide by 2 since we duplicated
+    const contentWidth = tickerContent.scrollWidth / 2; // Divide by 2 since we duplicated (primary + clone)
     const speed = 50; // pixels per second
     const duration = contentWidth / speed;
     

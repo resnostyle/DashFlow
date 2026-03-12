@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import { getApp } from './helpers.js';
 
-const { app } = getApp();
+const { app, rss } = getApp();
 
 describe('Feeds API', () => {
   beforeAll(async () => {
@@ -27,6 +27,46 @@ describe('Feeds API', () => {
     });
   });
 
+  describe('GET /api/feeds/health', () => {
+    it('returns feed health for dashboard', async () => {
+      const res = await request(app)
+        .get('/api/feeds/health')
+        .query({ dashboard: 'feed-test' });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({});
+    });
+
+    it('returns health structure when feeds exist', async () => {
+      const createRes = await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'feed-test' })
+        .send({ name: 'Health Feed', url: 'https://example.com/health' });
+      const feedId = createRes.body.id;
+
+      rss.getFeedHealth.mockReturnValue({
+        [feedId]: { lastSuccess: 1234567890, lastError: null, errorCount: 0 },
+      });
+
+      const res = await request(app)
+        .get('/api/feeds/health')
+        .query({ dashboard: 'feed-test' });
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty(feedId);
+      expect(res.body[feedId]).toMatchObject({
+        lastSuccess: 1234567890,
+        lastError: null,
+        errorCount: 0,
+      });
+    });
+
+    it('returns 404 for non-existent dashboard', async () => {
+      const res = await request(app)
+        .get('/api/feeds/health')
+        .query({ dashboard: 'nonexistent' });
+      expect(res.status).toBe(404);
+    });
+  });
+
   describe('POST /api/feeds', () => {
     it('creates a new feed', async () => {
       const res = await request(app)
@@ -40,6 +80,15 @@ describe('Feeds API', () => {
       });
       expect(res.body).toHaveProperty('id');
       expect(res.body).toHaveProperty('createdAt');
+    });
+
+    it('calls scheduleDashboard when creating feed with ticker enabled', async () => {
+      rss.scheduleDashboard.mockClear();
+      await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'feed-test' })
+        .send({ name: 'Schedule Test', url: 'https://example.com/schedule' });
+      expect(rss.scheduleDashboard).toHaveBeenCalledWith('feed-test');
     });
 
     it('creates a feed with a logo', async () => {
@@ -73,13 +122,22 @@ describe('Feeds API', () => {
       expect(res.body.error).toMatch(/Invalid URL/);
     });
 
+    it('returns 400 for localhost url (SSRF prevention)', async () => {
+      const res = await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'feed-test' })
+        .send({ url: 'http://localhost/feed.xml' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/localhost|not allowed/);
+    });
+
     it('returns 400 for invalid logo url', async () => {
       const res = await request(app)
         .post('/api/feeds')
         .query({ dashboard: 'feed-test' })
         .send({ url: 'https://example.com/rss', logo: 'bad-logo' });
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/Invalid logo URL/);
+      expect(res.body.error).toMatch(/Invalid URL format/);
     });
 
     it('returns 404 for non-existent dashboard', async () => {
@@ -140,6 +198,20 @@ describe('Feeds API', () => {
         .query({ dashboard: 'feed-test' });
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('message', 'Feed deleted');
+    });
+
+    it('calls clearFeedHealth when deleting a feed', async () => {
+      const create = await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'feed-test' })
+        .send({ name: 'Health Clear Test', url: 'https://example.com/health-clear' });
+      const feedId = create.body.id;
+
+      rss.clearFeedHealth.mockClear();
+      await request(app)
+        .delete(`/api/feeds/${feedId}`)
+        .query({ dashboard: 'feed-test' });
+      expect(rss.clearFeedHealth).toHaveBeenCalledWith(feedId);
     });
 
     it('returns 404 for non-existent feed', async () => {

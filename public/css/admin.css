@@ -18,6 +18,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #333;
@@ -37,6 +39,18 @@ body {
 .admin-link:hover {
   color: #6bb3ff;
   text-decoration: underline;
+}
+
+.admin-logout-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-logout-btn:hover {
+  background: none;
 }
 
 .toast {
@@ -181,6 +195,45 @@ body {
   color: #eee;
 }
 
+.bulk-import-row {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.bulk-import-row label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  color: #aaa;
+}
+
+.bulk-import-row textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+}
+
+.bulk-import-row button {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  background: #2a4a6a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bulk-import-row button:hover {
+  background: #3a5a7a;
+}
+
 .admin-list {
   margin-top: 0.5rem;
 }
@@ -197,11 +250,39 @@ body {
   font-size: 0.9rem;
 }
 
-.admin-list-item span {
+.admin-list-item > span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 70%;
+}
+
+.admin-list-item .feed-list-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 70%;
+  min-width: 0;
+}
+
+.feed-status {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.feed-status-ok {
+  background: #2d7a3e;
+}
+
+.feed-status-error {
+  background: #c44;
+}
+
+.feed-status-pending {
+  background: #666;
 }
 
 .admin-list-actions {
@@ -264,4 +345,96 @@ body {
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   font-size: 0.8em;
+}
+
+.admin-error {
+  padding: 0.75rem 1rem;
+  background: #4a1a1a;
+  color: #faa;
+  border: 1px solid #5a2d2d;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.admin-error[hidden] {
+  display: none;
+}
+
+.admin-loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.admin-loading[hidden] {
+  display: none;
+}
+
+.admin-loading::after {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 3px solid #333;
+  border-top-color: #4a9eff;
+  border-radius: 50%;
+  animation: admin-spin 0.8s linear infinite;
+}
+
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+}
+
+.modal-content h3 {
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.modal-actions .btn-cancel {
+  background: transparent;
+  color: #888;
+  border: 1px solid #444;
+}
+
+.modal-actions .btn-cancel:hover {
+  background: #222;
+  color: #aaa;
 }

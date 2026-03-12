@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { getDashboardId } = require('../middleware');
+const { validateFetchUrl } = require('../utils/urlValidation');
 
 const router = express.Router();
 
@@ -15,10 +16,9 @@ router.post('/', (req, res) => {
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
   }
-  try {
-    new URL(url);
-  } catch {
-    return res.status(400).json({ error: 'Invalid URL format' });
+  const urlCheck = validateFetchUrl(url);
+  if (!urlCheck.valid) {
+    return res.status(400).json({ error: urlCheck.error || 'Invalid URL' });
   }
 
   if (!db.getDashboard(dashboardId)) {
@@ -38,10 +38,9 @@ router.put('/:id', (req, res) => {
   const { url, title, type } = req.body;
 
   if (url) {
-    try {
-      new URL(url);
-    } catch {
-      return res.status(400).json({ error: 'Invalid URL format' });
+    const urlCheck = validateFetchUrl(url);
+    if (!urlCheck.valid) {
+      return res.status(400).json({ error: urlCheck.error || 'Invalid URL' });
     }
   }
 

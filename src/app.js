@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const db = require('./db');
 
 const { ensureAuthenticated } = require('./middleware/auth');
@@ -22,11 +24,24 @@ const sessionSecret =
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// CORS - configurable via CORS_ORIGIN (comma-separated for multiple; omit or '*' for all)
+const corsOriginRaw = process.env.CORS_ORIGIN;
+let corsOptions;
+if (!corsOriginRaw || corsOriginRaw.trim() === '*') {
+  corsOptions = { origin: '*' };
+} else {
+  corsOptions = { origin: corsOriginRaw.split(',').map((o) => o.trim()) };
+}
+app.use(cors(corsOptions));
+
+// Compression for production
+if (process.env.NODE_ENV === 'production') {
+  app.use(compression());
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : 0);
 app.use(
   session({
     secret: sessionSecret,
@@ -66,7 +81,20 @@ app.get('/admin/login', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-login.html'));
 });
 
-app.post('/admin/login', (req, res) => {
+// Rate limit login to prevent brute force (5 attempts per 15 minutes per IP)
+// Skip in test environment to avoid flaky tests
+const loginLimiter =
+  process.env.NODE_ENV === 'test'
+    ? (_req, res, next) => next()
+    : rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 5,
+        message: { error: 'Too many login attempts. Try again later.' },
+        standardHeaders: true,
+        legacyHeaders: false,
+      });
+
+app.post('/admin/login', loginLimiter, (req, res) => {
   if (!process.env.ADMIN_PASSWORD) {
     return res.redirect('/admin');
   }
@@ -81,6 +109,14 @@ app.post('/admin/login', (req, res) => {
     req.session.authenticated = true;
     req.session.role = 'admin';
     res.redirect('/admin');
+  });
+});
+
+// Logout - destroy session and redirect to login
+app.post('/admin/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) console.error('Session destroy error:', err);
+    res.redirect('/admin/login');
   });
 });
 

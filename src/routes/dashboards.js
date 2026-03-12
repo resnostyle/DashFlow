@@ -45,6 +45,12 @@ router.get('/:id', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const { name, description, type, sport } = req.body;
+  if (type !== undefined && type !== 'default' && type !== 'sports') {
+    return res.status(400).json({ error: 'Type must be "default" or "sports"' });
+  }
+  if (type === 'sports' && sport !== undefined && !['mens', 'womens'].includes(sport)) {
+    return res.status(400).json({ error: 'Sport must be "mens" or "womens" when type is "sports"' });
+  }
   const dashboard = db.updateDashboard(req.params.id, { name, description, type, sport });
   if (!dashboard) {
     return res.status(404).json({ error: 'Dashboard not found' });
@@ -58,11 +64,12 @@ router.delete('/:id', (req, res) => {
   if (id === 'default') {
     return res.status(400).json({ error: 'Cannot delete default dashboard' });
   }
+  const feedIds = db.getFeeds(id).map(f => f.id);
   if (!db.deleteDashboard(id)) {
     return res.status(404).json({ error: 'Dashboard not found' });
   }
 
-  rss.clearTickerItems(id);
+  rss.clearTickerItems(id, feedIds);
   res.json({ message: 'Dashboard deleted' });
 });
 

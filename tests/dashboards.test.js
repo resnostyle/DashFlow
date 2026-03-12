@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { getApp } from './helpers.js';
 
-const { app } = getApp();
+const { app, rss } = getApp();
 
 describe('Dashboards API', () => {
   describe('GET /api/dashboards', () => {
@@ -147,6 +147,30 @@ describe('Dashboards API', () => {
       expect(res.body.type).toBe('sports');
       expect(res.body.sport).toBe('womens');
     });
+
+    it('returns 400 for invalid type', async () => {
+      await request(app)
+        .post('/api/dashboards')
+        .send({ id: 'invalid-type-test', name: 'Invalid Type' });
+
+      const res = await request(app)
+        .put('/api/dashboards/invalid-type-test')
+        .send({ type: 'invalid' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Type must be/);
+    });
+
+    it('returns 400 for invalid sport when type is sports', async () => {
+      await request(app)
+        .post('/api/dashboards')
+        .send({ id: 'invalid-sport-put', name: 'Invalid Sport', type: 'sports', sport: 'mens' });
+
+      const res = await request(app)
+        .put('/api/dashboards/invalid-sport-put')
+        .send({ type: 'sports', sport: 'invalid' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Sport must be/);
+    });
   });
 
   describe('DELETE /api/dashboards/:id', () => {
@@ -161,6 +185,22 @@ describe('Dashboards API', () => {
 
       const check = await request(app).get('/api/dashboards/delete-me');
       expect(check.status).toBe(404);
+    });
+
+    it('calls clearTickerItems with feed ids when deleting dashboard that has feeds', async () => {
+      await request(app)
+        .post('/api/dashboards')
+        .send({ id: 'delete-with-feeds', name: 'Delete With Feeds' });
+      const feedRes = await request(app)
+        .post('/api/feeds')
+        .query({ dashboard: 'delete-with-feeds' })
+        .send({ name: 'Feed', url: 'https://example.com/feed' });
+      const feedId = feedRes.body.id;
+
+      rss.clearTickerItems.mockClear();
+      await request(app).delete('/api/dashboards/delete-with-feeds');
+
+      expect(rss.clearTickerItems).toHaveBeenCalledWith('delete-with-feeds', [feedId]);
     });
 
     it('cannot delete the default dashboard', async () => {

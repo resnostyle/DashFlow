@@ -2,11 +2,20 @@ const express = require('express');
 const db = require('../db');
 const rss = require('../services/rss');
 const { getDashboardId } = require('../middleware');
+const { validateFetchUrl } = require('../utils/urlValidation');
 
 const router = express.Router();
 
 router.get('/', (req, res) => {
   res.json(db.getFeeds(getDashboardId(req)));
+});
+
+router.get('/health', (req, res) => {
+  const dashboardId = getDashboardId(req);
+  if (!db.getDashboard(dashboardId)) {
+    return res.status(404).json({ error: 'Dashboard not found' });
+  }
+  res.json(rss.getFeedHealth(dashboardId));
 });
 
 router.post('/', async (req, res) => {
@@ -16,16 +25,14 @@ router.post('/', async (req, res) => {
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
   }
-  try {
-    new URL(url);
-  } catch {
-    return res.status(400).json({ error: 'Invalid URL format' });
+  const urlCheck = validateFetchUrl(url);
+  if (!urlCheck.valid) {
+    return res.status(400).json({ error: urlCheck.error || 'Invalid URL' });
   }
   if (logo) {
-    try {
-      new URL(logo);
-    } catch {
-      return res.status(400).json({ error: 'Invalid logo URL format' });
+    const logoCheck = validateFetchUrl(logo);
+    if (!logoCheck.valid) {
+      return res.status(400).json({ error: logoCheck.error || 'Invalid logo URL' });
     }
   }
 
@@ -41,6 +48,7 @@ router.post('/', async (req, res) => {
     } catch (err) {
       console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
     }
+    rss.scheduleDashboard(dashboardId);
   }
 
   res.status(201).json(feed);
@@ -51,17 +59,15 @@ router.put('/:id', async (req, res) => {
   const { name, url, logo } = req.body;
 
   if (url) {
-    try {
-      new URL(url);
-    } catch {
-      return res.status(400).json({ error: 'Invalid URL format' });
+    const urlCheck = validateFetchUrl(url);
+    if (!urlCheck.valid) {
+      return res.status(400).json({ error: urlCheck.error || 'Invalid URL' });
     }
   }
   if (logo) {
-    try {
-      new URL(logo);
-    } catch {
-      return res.status(400).json({ error: 'Invalid logo URL format' });
+    const logoCheck = validateFetchUrl(logo);
+    if (!logoCheck.valid) {
+      return res.status(400).json({ error: logoCheck.error || 'Invalid logo URL' });
     }
   }
 
@@ -76,6 +82,7 @@ router.put('/:id', async (req, res) => {
     } catch (err) {
       console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
     }
+    rss.scheduleDashboard(dashboardId);
   }
 
   res.json(feed);
@@ -84,16 +91,23 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const dashboardId = getDashboardId(req);
 
-  if (!db.deleteFeed(req.params.id, dashboardId)) {
+  const deletedFeedId = req.params.id;
+  if (!db.deleteFeed(deletedFeedId, dashboardId)) {
     return res.status(404).json({ error: 'Feed not found' });
   }
 
-  if (db.getConfig(dashboardId).tickerEnabled) {
+  rss.clearFeedHealth(deletedFeedId);
+
+  const feedsLeft = db.getFeeds(dashboardId);
+  if (feedsLeft.length > 0 && db.getConfig(dashboardId).tickerEnabled) {
     try {
       await rss.fetchFeeds(dashboardId);
     } catch (err) {
       console.error(`Failed to refresh feeds for dashboard ${dashboardId}:`, err.message);
     }
+    rss.scheduleDashboard(dashboardId);
+  } else {
+    rss.clearTickerItems(dashboardId);
   }
 
   res.json({ message: 'Feed deleted' });

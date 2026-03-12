@@ -22,10 +22,24 @@ export function createMockIo() {
  * @param {object} options
  * @param {boolean} options.mockRss - Whether to stub the rss service (default: true)
  * @param {object} options.rssOverrides - Override specific rss mock return values
+ * @param {boolean} options.mockEspn - Whether to stub the espn service (default: true)
  */
-export function getApp({ mockRss = true, rssOverrides = {} } = {}) {
+export function getApp({ mockRss = true, rssOverrides = {}, mockEspn = true } = {}) {
   const db = require('../src/db');
   db.initialize();
+
+  // Mock ESPN before loading routes that depend on it
+  if (mockEspn) {
+    const espn = require('../src/services/espn');
+    vi.spyOn(espn, 'getNCAAData').mockImplementation((sport) =>
+      Promise.resolve({
+        sport: sport || 'mens',
+        primary: { team: { name: 'Test Team', record: '0-0' }, lastGame: null, upcomingGames: [], nextGame: null },
+        secondary: [],
+        acc: { standings: [], todayGames: [] },
+      }),
+    );
+  }
 
   // Load the app (and all route modules, which will load rss as a dependency)
   const app = require('../src/app');
@@ -41,7 +55,10 @@ export function getApp({ mockRss = true, rssOverrides = {} } = {}) {
     vi.spyOn(rss, 'startRefreshLoop').mockImplementation(() => {});
     vi.spyOn(rss, 'stopRefreshLoop').mockImplementation(() => {});
     vi.spyOn(rss, 'restartRefreshLoop').mockImplementation(() => {});
+    vi.spyOn(rss, 'scheduleDashboard').mockImplementation(() => {});
     vi.spyOn(rss, 'clearTickerItems').mockImplementation(() => {});
+    vi.spyOn(rss, 'clearFeedHealth').mockImplementation(() => {});
+    vi.spyOn(rss, 'getFeedHealth').mockImplementation(() => ({}));
     vi.spyOn(rss, 'getTickerItems').mockImplementation(
       rssOverrides.getTickerItems ?? (() => []),
     );
