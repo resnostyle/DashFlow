@@ -1,4 +1,24 @@
-/* Admin page styles */
+/* Admin page styles - uses refreshed color scheme */
+
+:root {
+    --bg-primary: #0a0a0a;
+    --bg-surface: #141414;
+    --bg-elevated: #1a1a1a;
+    --bg-input: #1c1c1c;
+    --border-subtle: #262626;
+    --border-default: #333;
+    --border-muted: #404040;
+    --text-primary: #fafafa;
+    --text-secondary: #a3a3a3;
+    --text-muted: #737373;
+    --accent: #0ea5e9;
+    --accent-hover: #38bdf8;
+    --accent-muted: rgba(14, 165, 233, 0.15);
+    --success-bg: #14532d;
+    --success-border: #166534;
+    --error-bg: #450a0a;
+    --error-border: #7f1d1d;
+}
 
 body {
   overflow: auto;
@@ -9,8 +29,8 @@ body {
   margin: 0 auto;
   padding: 2rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: #111;
-  color: #eee;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
 }
 
@@ -22,7 +42,7 @@ body {
   gap: 0.75rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .admin-header h1 {
@@ -31,13 +51,13 @@ body {
 }
 
 .admin-link {
-  color: #4a9eff;
+  color: var(--accent);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
 .admin-link:hover {
-  color: #6bb3ff;
+  color: var(--accent-hover);
   text-decoration: underline;
 }
 
@@ -69,15 +89,15 @@ body {
 }
 
 .toast-success {
-  background: #1a472a;
-  color: #7dd;
-  border: 1px solid #2d5a3d;
+  background: var(--success-bg);
+  color: #86efac;
+  border: 1px solid var(--success-border);
 }
 
 .toast-error {
-  background: #4a1a1a;
-  color: #faa;
-  border: 1px solid #5a2d2d;
+  background: var(--error-bg);
+  color: #fca5a5;
+  border: 1px solid var(--error-border);
 }
 
 .admin-section {
@@ -88,19 +108,19 @@ body {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .admin-section h3 {
   font-size: 0.95rem;
   font-weight: 500;
   margin-bottom: 0.75rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .admin-form {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 1.25rem;
   margin-bottom: 1rem;
@@ -118,11 +138,11 @@ body {
   display: block;
   font-size: 0.85rem;
   margin-bottom: 0.35rem;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .admin-form .required {
-  color: #e66;
+  color: #f87171;
 }
 
 .admin-form input[type="text"],
@@ -132,16 +152,17 @@ body {
   width: 100%;
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  color: var(--text-primary);
 }
 
 .admin-form input:focus,
 .admin-form select:focus {
   outline: none;
-  border-color: #4a9eff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
 .admin-form .checkbox-row {
@@ -156,22 +177,23 @@ body {
 
 .admin-form input[type="checkbox"] {
   width: auto;
-  accent-color: #4a9eff;
+  accent-color: var(--accent);
 }
 
 .admin-form button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
-  background: #2a4a6a;
+  background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .admin-form button:hover {
-  background: #3a5a7a;
+  background: var(--accent-hover);
 }
 
 .dashboard-select-row {
@@ -183,16 +205,16 @@ body {
 
 .dashboard-select-row label {
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .dashboard-select-row select {
   padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  color: var(--text-primary);
 }
 
 .bulk-import-row {
@@ -204,17 +226,17 @@ body {
   display: block;
   font-size: 0.85rem;
   margin-bottom: 0.35rem;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .bulk-import-row textarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  color: var(--text-primary);
   font-family: inherit;
   resize: vertical;
   margin-bottom: 0.5rem;
@@ -223,15 +245,15 @@ body {
 .bulk-import-row button {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
-  background: #2a4a6a;
+  background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .bulk-import-row button:hover {
-  background: #3a5a7a;
+  background: var(--accent-hover);
 }
 
 .admin-list {
@@ -243,9 +265,9 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.6rem 0.75rem;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
@@ -274,15 +296,15 @@ body {
 }
 
 .feed-status-ok {
-  background: #2d7a3e;
+  background: #22c55e;
 }
 
 .feed-status-error {
-  background: #c44;
+  background: #ef4444;
 }
 
 .feed-status-pending {
-  background: #666;
+  background: var(--text-muted);
 }
 
 .admin-list-actions {
@@ -295,27 +317,27 @@ body {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
   background: transparent;
-  color: #4a9eff;
-  border: 1px solid #4a9eff;
-  border-radius: 4px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .admin-list-actions button:hover {
-  background: rgba(74, 158, 255, 0.15);
+  background: var(--accent-muted);
 }
 
 .admin-list-actions .btn-delete {
-  color: #e66;
-  border-color: #e66;
+  color: #f87171;
+  border-color: #f87171;
 }
 
 .admin-list-actions .btn-delete:hover {
-  background: rgba(238, 102, 102, 0.15);
+  background: rgba(248, 113, 113, 0.15);
 }
 
 .admin-empty {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-style: italic;
 }
@@ -323,25 +345,25 @@ body {
 .config-subsection {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-default);
 }
 
 .config-subsection-title {
   font-size: 0.95rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .config-help {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-muted);
   margin-bottom: 1rem;
   line-height: 1.4;
 }
 
 .config-help code {
-  background: #222;
+  background: var(--bg-input);
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   font-size: 0.8em;
@@ -349,9 +371,9 @@ body {
 
 .admin-error {
   padding: 0.75rem 1rem;
-  background: #4a1a1a;
-  color: #faa;
-  border: 1px solid #5a2d2d;
+  background: var(--error-bg);
+  color: #fca5a5;
+  border: 1px solid var(--error-border);
   border-radius: 6px;
   margin-bottom: 1rem;
 }
@@ -378,8 +400,8 @@ body {
   content: '';
   width: 40px;
   height: 40px;
-  border: 3px solid #333;
-  border-top-color: #4a9eff;
+  border: 3px solid var(--border-default);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: admin-spin 0.8s linear infinite;
 }
@@ -410,8 +432,8 @@ body {
 
 .modal-content {
   position: relative;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 1.5rem;
   max-width: 400px;
@@ -430,11 +452,11 @@ body {
 
 .modal-actions .btn-cancel {
   background: transparent;
-  color: #888;
-  border: 1px solid #444;
+  color: var(--text-muted);
+  border: 1px solid var(--border-muted);
 }
 
 .modal-actions .btn-cancel:hover {
-  background: #222;
-  color: #aaa;
+  background: var(--bg-input);
+  color: var(--text-secondary);
 }
