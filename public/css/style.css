@@ -1,3 +1,5 @@
+/* Color scheme from theme.css (loaded via HTML) */
+
 /* Screen-reader only: visually hidden but announced by assistive tech */
 .sr-only {
   position: absolute;
@@ -26,8 +28,8 @@ html, body {
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow: hidden;
-    background: #000;
-    color: #fff;
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .manage-link {
@@ -36,14 +38,15 @@ body {
     right: 0.5rem;
     z-index: 100;
     font-size: 0.85rem;
-    color: #4a9eff;
+    color: var(--accent);
     text-decoration: none;
-    opacity: 0.6;
-    transition: opacity 0.2s;
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
 }
 
 .manage-link:hover {
     opacity: 1;
+    color: var(--accent-hover);
 }
 
 .container {
@@ -61,21 +64,21 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #000;
+    background: var(--bg-primary);
     position: relative;
     overflow: hidden;
 }
 
 .content-placeholder {
     text-align: center;
-    color: #666;
+    color: var(--text-muted);
     padding: 2rem;
 }
 
 .content-placeholder h1 {
     font-size: 2.5rem;
     margin-bottom: 1rem;
-    color: #999;
+    color: var(--text-secondary);
 }
 
 .content-placeholder p {
@@ -120,9 +123,9 @@ body {
 }
 
 .ticker-container {
-    height: 100px;
-    background: #1a1a1a;
-    border-top: 2px solid #333;
+    height: 65px;
+    background: var(--bg-surface);
+    border-top: 2px solid var(--border-default);
     overflow: hidden;
     position: relative;
     transition: height 0.3s ease, opacity 0.3s ease, border 0.3s ease;
@@ -156,28 +159,28 @@ body {
 .ticker-item {
     display: inline-flex;
     align-items: center;
-    padding: 0 50px;
+    padding: 0 24px;
     font-size: 1.6rem;
-    color: #fff;
-    line-height: 100px;
-    border-right: 1px solid #333;
-    gap: 12px;
+    color: var(--text-primary);
+    line-height: 65px;
+    border-right: 1px solid var(--border-subtle);
+    gap: 8px;
 }
 
 .ticker-item a {
-    color: #4a9eff;
+    color: var(--accent);
     text-decoration: none;
     transition: color 0.2s;
 }
 
 .ticker-item a:hover {
-    color: #6bb3ff;
+    color: var(--accent-hover);
 }
 
 .ticker-logo {
-    height: 40px;
+    height: 32px;
     width: auto;
-    max-width: 120px;
+    max-width: 100px;
     object-fit: contain;
     vertical-align: middle;
     opacity: 0.9;
@@ -190,8 +193,8 @@ body {
 
 .ticker-separator {
     display: inline-block;
-    padding: 0 20px;
-    color: #666;
+    padding: 0 10px;
+    color: var(--text-muted);
     font-weight: bold;
 }
 
@@ -280,7 +283,7 @@ body {
 .sports-primary-next {
     grid-column: 2;
     grid-row: 1 / 3;
-    background: linear-gradient(135deg, var(--sports-team-primary-dark, #0a1628) 0%, #1a1a1a 100%);
+    background: linear-gradient(135deg, var(--sports-team-primary-dark, #0a1628) 0%, var(--bg-elevated) 100%);
     border: 1px solid var(--sports-team-primary, #00539b);
     border-radius: 10px;
     padding: 1rem 1.25rem;
@@ -288,7 +291,7 @@ body {
 }
 
 .sports-primary-next-empty {
-    color: #666;
+    color: var(--text-muted);
     font-style: italic;
 }
 
@@ -298,8 +301,8 @@ body {
     flex-wrap: wrap;
     gap: 0.75rem 1.5rem;
     padding: 0.5rem 0;
-    border-top: 1px solid #333;
-    border-bottom: 1px solid #333;
+    border-top: 1px solid var(--border-default);
+    border-bottom: 1px solid var(--border-default);
 }
 
 .sports-primary-recent {
@@ -331,13 +334,13 @@ body {
 .sports-primary-name {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--text-primary);
     margin: 0;
 }
 
 .sports-primary-rank {
     font-size: 1.1rem;
-    color: var(--sports-team-primary-light, #4a9eff);
+    color: var(--sports-team-primary-light, var(--accent));
     font-weight: 600;
 }
 
@@ -345,22 +348,22 @@ body {
     margin-left: auto;
     font-size: 2rem;
     font-weight: 800;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .sports-primary-stat {
     font-size: 1.1rem;
-    color: #bbb;
+    color: var(--text-secondary);
 }
 
 .sports-primary-stat-label {
-    color: #777;
+    color: var(--text-muted);
     margin-right: 0.35rem;
 }
 
 .sports-primary-next-label {
     font-size: 0.75rem;
-    color: #666;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.35rem;
@@ -369,7 +372,7 @@ body {
 .sports-primary-next-date {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
@@ -390,12 +393,12 @@ body {
 .sports-primary-next-venue,
 .sports-primary-next-broadcast {
     font-size: 0.95rem;
-    color: #888;
+    color: var(--text-muted);
 }
 
 .sports-primary-last {
     font-size: 1rem;
-    color: #aaa;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -403,13 +406,13 @@ body {
 }
 
 .sports-primary-last-label {
-    color: #666;
+    color: var(--text-muted);
     margin-right: 0.25rem;
 }
 
 .sports-primary-upcoming {
     font-size: 0.9rem;
-    color: #888;
+    color: var(--text-muted);
 }
 
 .sports-primary-upcoming-game {
@@ -442,7 +445,7 @@ body {
 .sports-title {
     font-size: 1.5rem;
     text-align: center;
-    color: #fff;
+    color: var(--text-primary);
     margin: 0;
     padding: 0.25rem 0;
     white-space: nowrap;
@@ -456,10 +459,10 @@ body {
 
 .sports-team-card {
     min-width: 0;
-    background: #1a1a1a;
+    background: var(--bg-elevated);
     border-radius: 8px;
     padding: 1rem 1.25rem;
-    border: 1px solid var(--sports-team-card-color, #333);
+    border: 1px solid var(--sports-team-card-color, var(--border-default));
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -467,7 +470,7 @@ body {
 
 .sports-team-primary {
     border-color: var(--sports-team-primary, #00539b);
-    background: linear-gradient(135deg, var(--sports-team-primary-dark, #0a1628) 0%, #1a1a1a 100%);
+    background: linear-gradient(135deg, var(--sports-team-primary-dark, #0a1628) 0%, var(--bg-elevated) 100%);
 }
 
 .sports-team-header {
@@ -510,7 +513,7 @@ body {
 
 .sports-team-rank {
     font-size: 0.85rem;
-    color: var(--sports-team-primary-light, #4a9eff);
+    color: var(--sports-team-primary-light, var(--accent));
     font-weight: 600;
 }
 
@@ -522,13 +525,13 @@ body {
 
 .sports-team-standing {
     font-size: 0.8rem;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 0.5rem;
 }
 
 .sports-last-game {
     font-size: 0.8rem;
-    color: #aaa;
+    color: var(--text-secondary);
     margin-bottom: 0.4rem;
     display: flex;
     align-items: center;
@@ -543,7 +546,7 @@ body {
 }
 
 .sports-game-at {
-    color: #666;
+    color: var(--text-muted);
     margin: 0 0.25rem;
 }
 
@@ -564,18 +567,18 @@ body {
 }
 
 .sports-win {
-    background: #1a472a;
+    background: #14532d;
     color: #4ade80;
 }
 
 .sports-loss {
-    background: #4a1a1a;
+    background: #450a0a;
     color: #f87171;
 }
 
 .sports-upcoming {
     font-size: 0.75rem;
-    color: #888;
+    color: var(--text-muted);
 }
 
 .sports-upcoming-game {
@@ -589,14 +592,14 @@ body {
 .sports-upcoming-date {
     flex: 0 0 auto;
     min-width: 8rem;
-    color: #777;
+    color: var(--text-muted);
 }
 
 /* ---- Duke news slider ---- */
 .sports-news-slider {
     margin-top: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid #333;
+    border-top: 1px solid var(--border-default);
     min-height: 140px;
     overflow: hidden;
 }
@@ -605,7 +608,7 @@ body {
     content: 'News';
     display: block;
     font-size: 0.85rem;
-    color: #999;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.5rem;
@@ -629,16 +632,16 @@ body {
     max-width: 380px;
     min-height: 100px;
     display: flex;
-    background: #1a1a1a;
+    background: var(--bg-elevated);
     border-radius: 8px;
-    border: 1px solid #333;
+    border: 1px solid var(--border-default);
     overflow: hidden;
 }
 
 .sports-news-card-media {
     flex: 0 0 120px;
     min-width: 120px;
-    background: #111;
+    background: var(--bg-primary);
     display: flex;
     align-items: stretch;
     overflow: hidden;
@@ -663,7 +666,7 @@ body {
 .sports-news-card-title {
     font-size: 1rem;
     font-weight: 600;
-    color: #eee;
+    color: var(--text-primary);
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -673,7 +676,7 @@ body {
 
 .sports-news-card-snippet {
     font-size: 0.85rem;
-    color: #888;
+    color: var(--text-muted);
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -696,7 +699,7 @@ body {
 }
 
 .sports-acc-section {
-    background: #111;
+    background: var(--bg-primary);
     border-radius: 8px;
     padding: 0.75rem 1rem;
     overflow-y: auto;
@@ -706,7 +709,7 @@ body {
 .sports-section-title {
     font-size: 0.95rem;
     margin-bottom: 0.5rem;
-    color: #999;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -722,7 +725,7 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.35rem 0.5rem;
-    background: #1a1a1a;
+    background: var(--bg-elevated);
     border-radius: 4px;
 }
 
@@ -730,7 +733,7 @@ body {
     font-weight: 700;
     min-width: 1.25rem;
     text-align: center;
-    color: #666;
+    color: var(--text-muted);
     font-size: 0.85rem;
 }
 
@@ -747,7 +750,7 @@ body {
 }
 
 .sports-standings-record {
-    color: #888;
+    color: var(--text-muted);
     font-size: 0.85rem;
 }
 
@@ -756,7 +759,7 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.35rem 0.5rem;
-    background: #1a1a1a;
+    background: var(--bg-elevated);
     border-radius: 4px;
     margin-bottom: 0.35rem;
     font-size: 0.9rem;
@@ -779,14 +782,14 @@ body {
 }
 
 .sports-empty {
-    color: #555;
+    color: var(--text-muted);
     font-style: italic;
     font-size: 0.85rem;
 }
 
 .sports-loading {
     text-align: center;
-    color: #666;
+    color: var(--text-muted);
     padding: 2rem;
     font-size: 1.1rem;
 }
@@ -922,16 +925,16 @@ body {
     
     .ticker-item {
         font-size: 1.3rem;
-        padding: 0 30px;
+        padding: 0 24px;
         gap: 8px;
     }
     
     .ticker-container {
-        height: 80px;
+        height: 58px;
     }
     
     .ticker-item {
-        line-height: 80px;
+        line-height: 58px;
     }
     
     .ticker-logo {
