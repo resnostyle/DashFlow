@@ -589,6 +589,7 @@ async function deleteContent(id) {
  * - Sets #tickerRefreshInterval to the fetched `tickerRefreshInterval` or 300000 if missing.
  * - Sets #maxTickerItems to the fetched `maxTickerItems` or 50 if missing.
  * - Sets #tickerEnabled checked state to `true` unless the fetched `tickerEnabled` is explicitly `false`.
+ * - Sets #refreshEnabled checked state based on `refreshEnabled` (default false).
  */
 async function loadConfig() {
   const dashboardId = getDashboardId();
@@ -597,6 +598,8 @@ async function loadConfig() {
   document.getElementById('tickerRefreshInterval').value = cfg.tickerRefreshInterval ?? 300000;
   document.getElementById('maxTickerItems').value = cfg.maxTickerItems ?? 50;
   document.getElementById('tickerEnabled').checked = cfg.tickerEnabled !== false;
+  document.getElementById('refreshEnabled').checked = cfg.refreshEnabled === true;
+  document.getElementById('refreshInterval').value = Math.round((cfg.refreshInterval ?? 3600000) / 60000);
   document.getElementById('primaryTeamId').value = cfg.primaryTeamId ?? '';
   document.getElementById('secondaryTeamIds').value = Array.isArray(cfg.secondaryTeamIds)
     ? cfg.secondaryTeamIds.join(', ')
@@ -623,6 +626,8 @@ async function saveConfig(e) {
   const tickerRefreshInterval = parseInt(document.getElementById('tickerRefreshInterval').value, 10);
   const maxTickerItems = parseInt(document.getElementById('maxTickerItems').value, 10);
   const tickerEnabled = document.getElementById('tickerEnabled').checked;
+  const refreshEnabled = document.getElementById('refreshEnabled').checked;
+  const refreshIntervalMinutes = parseInt(document.getElementById('refreshInterval').value, 10);
   const primaryTeamId = document.getElementById('primaryTeamId').value.trim();
   const secondaryTeamIdsRaw = document.getElementById('secondaryTeamIds').value.trim();
   const secondaryTeamIds = secondaryTeamIdsRaw
@@ -652,11 +657,17 @@ async function saveConfig(e) {
     showToast('Max ticker items must be between 10 and 200', true);
     return;
   }
+  if (!Number.isFinite(refreshIntervalMinutes) || refreshIntervalMinutes < 1) {
+    showToast('Refresh interval must be at least 1 minute', true);
+    return;
+  }
   const body = {
     rotationInterval,
     tickerRefreshInterval,
     maxTickerItems,
-    tickerEnabled
+    tickerEnabled,
+    refreshEnabled,
+    refreshInterval: refreshIntervalMinutes * 60000
   };
   if (primaryTeamId) body.primaryTeamId = parseInt(primaryTeamId, 10);
   if (secondaryTeamIds?.length) body.secondaryTeamIds = secondaryTeamIds.slice(0, 2);
