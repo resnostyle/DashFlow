@@ -4,7 +4,9 @@ const BASE = 'site.api.espn.com';
 const ACC_GROUP = 50;
 const DEFAULT_PRIMARY = 150;
 const DEFAULT_SECONDARY = [153, 152];
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+/** All ESPN API responses are cached for 1 hour to avoid hitting the API too rapidly. */
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 const cache = {};
 const cacheExpiry = {};
@@ -47,10 +49,16 @@ function getCached(key, fetcher) {
   });
 }
 
-async function getTeamSchedule(league, teamId) {
+// All ESPN API fetchers use getCached - no requests bypass the 1-hour cache.
+
+async function getTeamSchedule(league, teamId, options = {}) {
   const path = getLeaguePath(league);
-  const url = `https://${BASE}${path}/teams/${teamId}/schedule`;
-  return getCached(`schedule:${league}:${teamId}`, () => fetch(url));
+  let url = `https://${BASE}${path}/teams/${teamId}/schedule`;
+  if (options.seasontype != null) {
+    url += `?seasontype=${options.seasontype}`;
+  }
+  const cacheKey = `schedule:${league}:${teamId}:${options.seasontype ?? 'default'}`;
+  return getCached(cacheKey, () => fetch(url));
 }
 
 async function getTeam(league, teamId) {
@@ -239,28 +247,44 @@ function parseBoxscorePlayers(summaryRes, teamId) {
   if (!teamPlayers?.statistics?.[0]?.athletes) return [];
   const keys = teamPlayers.statistics[0].keys || [];
   const athletes = teamPlayers.statistics[0].athletes || [];
-  const ptsIdx = keys.indexOf('points');
-  const rebIdx = keys.indexOf('rebounds');
-  const astIdx = keys.indexOf('assists');
-  const minIdx = keys.indexOf('minutes');
+  const idx = (k) => keys.indexOf(k);
+  const num = (a, i) => {
+    if (i < 0 || !a.stats?.[i]) return null;
+    const v = parseFloat(String(a.stats[i]));
+    return Number.isNaN(v) ? null : v;
+  };
+  const str = (a, i) => (i >= 0 && a.stats?.[i] ? String(a.stats[i]) : '');
 
   return athletes
     .filter(a => !a.didNotPlay && a.stats?.length)
     .map(a => {
-      const pts = ptsIdx >= 0 && a.stats[ptsIdx] ? parseFloat(a.stats[ptsIdx]) : 0;
-      const reb = rebIdx >= 0 && a.stats[rebIdx] ? parseFloat(a.stats[rebIdx]) : 0;
-      const ast = astIdx >= 0 && a.stats[astIdx] ? parseFloat(a.stats[astIdx]) : 0;
-      const min = minIdx >= 0 && a.stats[minIdx] ? a.stats[minIdx] : '';
+      const ptsIdx = idx('points');
+      const rebIdx = idx('rebounds');
+      const astIdx = idx('assists');
+      const minIdx = idx('minutes');
+      const fgIdx = idx('fieldGoalsMade-fieldGoalsAttempted');
+      const fg3Idx = idx('threePointFieldGoalsMade-threePointFieldGoalsAttempted');
+      const ftIdx = idx('freeThrowsMade-freeThrowsAttempted');
+      const stlIdx = idx('steals');
+      const blkIdx = idx('blocks');
+      const toIdx = idx('turnovers');
+
       return {
         id: a.athlete?.id,
         name: a.athlete?.displayName || a.athlete?.fullName || '',
         headshot: a.athlete?.headshot?.href || a.headshot?.href,
         position: a.athlete?.position?.abbreviation || a.position?.abbreviation || '',
         jersey: a.jersey || '',
-        pts,
-        reb,
-        ast,
-        min,
+        pts: num(a, ptsIdx) ?? 0,
+        reb: num(a, rebIdx) ?? 0,
+        ast: num(a, astIdx) ?? 0,
+        min: str(a, minIdx),
+        fg: str(a, fgIdx),
+        fg3: str(a, fg3Idx),
+        ft: str(a, ftIdx),
+        stl: num(a, stlIdx),
+        blk: num(a, blkIdx),
+        to: num(a, toIdx),
       };
     });
 }
@@ -370,7 +394,17 @@ async function getNCAAData(league, teamIds = {}) {
   const espnNews = (newsRes?.articles || []).slice(0, 12).map(parseNewsItem);
 
   let playerStats = null;
-  const lastEvent = getLastCompletedEvent(primaryEvents);
+  let eventsForPlayerStats = primaryEvents;
+  if (getLastCompletedEvent(primaryEvents) == null && primaryId) {
+    try {
+      const regSeasonSchedule = await getTeamSchedule(leaguePath, primaryId, { seasontype: 2 });
+      const regEvents = regSeasonSchedule?.events || [];
+      if (regEvents.length > 0) eventsForPlayerStats = regEvents;
+    } catch {
+      /* ignore */
+    }
+  }
+  const lastEvent = getLastCompletedEvent(eventsForPlayerStats);
   if (lastEvent?.id && primaryId) {
     try {
       const summaryRes = await getGameSummary(leaguePath, lastEvent.id);

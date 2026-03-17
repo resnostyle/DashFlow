@@ -169,6 +169,13 @@ function renderPlayerStatsSection(playerStats) {
     const card = (p, label) => {
         if (!p) return '';
         const headshot = p.headshot && (typeof safeUrl === 'function' ? safeUrl(p.headshot) : null);
+        const meta = [p.jersey ? `#${escapeHtml(p.jersey)}` : '', p.position ? escapeHtml(p.position) : '', p.lastGameVs ? `vs ${escapeHtml(p.lastGameVs)}` : ''].filter(Boolean).join(' · ');
+        const shooting = [p.fg ? `FG ${escapeHtml(p.fg)}` : '', p.fg3 ? `3PT ${escapeHtml(p.fg3)}` : '', p.ft ? `FT ${escapeHtml(p.ft)}` : ''].filter(Boolean).join(' · ');
+        const extra = [];
+        if (p.min) extra.push(`${escapeHtml(p.min)} MIN`);
+        if (p.stl != null && p.stl > 0) extra.push(`${p.stl} STL`);
+        if (p.blk != null && p.blk > 0) extra.push(`${p.blk} BLK`);
+        if (p.to != null && p.to > 0) extra.push(`${p.to} TO`);
         return `
             <div class="sports-player-card">
                 <div class="sports-player-card-label">${escapeHtml(label)}</div>
@@ -176,13 +183,14 @@ function renderPlayerStatsSection(playerStats) {
                     ${headshot ? `<img src="${escapeHtml(headshot)}" alt="" class="sports-player-card-headshot" />` : ''}
                     <div class="sports-player-card-info">
                         <div class="sports-player-card-name">${escapeHtml(p.name || '')}</div>
-                        ${p.position ? `<span class="sports-player-card-pos">${escapeHtml(p.position)}</span>` : ''}
-                        ${p.lastGameVs ? `<span class="sports-player-card-game">vs ${escapeHtml(p.lastGameVs)}</span>` : ''}
+                        ${meta ? `<div class="sports-player-card-meta">${meta}</div>` : ''}
                         <div class="sports-player-card-stats">
                             <span>${escapeHtml(String(p.pts ?? '-'))} PTS</span>
                             <span>${escapeHtml(String(p.reb ?? '-'))} REB</span>
                             <span>${escapeHtml(String(p.ast ?? '-'))} AST</span>
                         </div>
+                        ${shooting ? `<div class="sports-player-card-shooting">${shooting}</div>` : ''}
+                        ${extra.length ? `<div class="sports-player-card-extra">${extra.join(' · ')}</div>` : ''}
                     </div>
                 </div>
             </div>`;

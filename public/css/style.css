@@ -779,7 +779,7 @@ body {
     background: var(--bg-elevated);
     border-radius: 10px;
     border: 1px solid var(--border-default);
-    padding: 1rem 1.25rem;
+    padding: 1.25rem 1.5rem;
 }
 
 .sports-player-card-label {
@@ -798,8 +798,8 @@ body {
 }
 
 .sports-player-card-headshot {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
@@ -816,20 +816,31 @@ body {
     color: var(--text-primary);
 }
 
-.sports-player-card-pos,
-.sports-player-card-game {
-    font-size: 0.9rem;
+.sports-player-card-meta {
+    font-size: 0.85rem;
     color: var(--text-muted);
-    margin-right: 0.5rem;
+    margin-top: 0.2rem;
 }
 
 .sports-player-card-stats {
     display: flex;
     gap: 1rem;
-    margin-top: 0.35rem;
+    margin-top: 0.5rem;
     font-size: 1rem;
     font-weight: 600;
     color: var(--sports-team-primary-light, var(--accent));
+}
+
+.sports-player-card-shooting {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.sports-player-card-extra {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
 }
 
 @media (max-width: 700px) {
