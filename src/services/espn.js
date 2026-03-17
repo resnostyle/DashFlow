@@ -5,8 +5,10 @@ const ACC_GROUP = 50;
 const DEFAULT_PRIMARY = 150;
 const DEFAULT_SECONDARY = [153, 152];
 
-/** All ESPN API responses are cached for 1 hour to avoid hitting the API too rapidly. */
+/** Default cache TTL: 1 hour for most ESPN API responses. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
+/** Short TTL for live endpoints (scoreboard, game summary) to avoid stale data during games. */
+const CACHE_TTL_LIVE_MS = 15 * 1000;
 
 const cache = {};
 const cacheExpiry = {};
@@ -37,14 +39,14 @@ function fetch(url) {
   });
 }
 
-function getCached(key, fetcher) {
+function getCached(key, fetcher, ttlMs = CACHE_TTL_MS) {
   const now = Date.now();
   if (cache[key] && cacheExpiry[key] > now) {
     return Promise.resolve(cache[key]);
   }
   return fetcher().then(data => {
     cache[key] = data;
-    cacheExpiry[key] = now + CACHE_TTL_MS;
+    cacheExpiry[key] = now + ttlMs;
     return data;
   });
 }
@@ -76,8 +78,10 @@ async function getScoreboard(league, options = {}) {
   if (options.dates) {
     url += (url.includes('?') ? '&' : '?') + `dates=${options.dates}`;
   }
-  return getCached(`scoreboard:${league}:${options.groups || 'all'}:${options.dates || 'today'}`, () =>
-    fetch(url),
+  return getCached(
+    `scoreboard:${league}:${options.groups || 'all'}:${options.dates || 'today'}`,
+    () => fetch(url),
+    CACHE_TTL_LIVE_MS,
   );
 }
 
@@ -90,7 +94,7 @@ async function getNews(league) {
 async function getGameSummary(league, eventId) {
   const path = getLeaguePath(league);
   const url = `https://${BASE}${path}/summary?event=${eventId}`;
-  return getCached(`summary:${league}:${eventId}`, () => fetch(url));
+  return getCached(`summary:${league}:${eventId}`, () => fetch(url), CACHE_TTL_LIVE_MS);
 }
 
 async function getTeamRoster(league, teamId) {
@@ -329,15 +333,21 @@ async function getNCAAData(league, teamIds = {}) {
   const secondaryIds = teamIds.secondaryTeamIds ?? DEFAULT_SECONDARY;
   const [s1, s2] = secondaryIds;
 
-  const [primarySchedule, primaryTeamRes, sec1Schedule, sec2Schedule, accScoreboard, newsRes] =
+  const [primarySchedule, primaryTeamRes, sec1Schedule, sec2Schedule, accScoreboard] =
     await Promise.all([
       getTeamSchedule(leaguePath, primaryId),
       getTeam(leaguePath, primaryId),
       s1 ? getTeamSchedule(leaguePath, s1) : null,
       s2 ? getTeamSchedule(leaguePath, s2) : null,
       getScoreboard(leaguePath, { groups: ACC_GROUP }),
-      getNews(leaguePath),
     ]);
+
+  let newsRes = null;
+  try {
+    newsRes = await getNews(leaguePath);
+  } catch {
+    /* best-effort: news fetch failure does not fail the whole request */
+  }
 
   const primaryTeam = parseTeamFromSchedule(primarySchedule);
   const sec1Team = s1 ? parseTeamFromSchedule(sec1Schedule) : null;
@@ -374,19 +384,22 @@ async function getNCAAData(league, teamIds = {}) {
     }))
     .sort((a, b) => (a.rank || 99) - (b.rank || 99));
 
+  const upcomingOnly = (events, limit, league) =>
+    getUpcomingGames(events, limit, league).filter(g => !g.isLive);
+
   const secondary = [
     sec1Team
       ? {
           team: sec1Team,
           lastGame: getLastGame(sec1Events, leaguePath),
-          upcomingGames: getUpcomingGames(sec1Events, 3, leaguePath),
+          upcomingGames: upcomingOnly(sec1Events, 3, leaguePath),
         }
       : null,
     sec2Team
       ? {
           team: sec2Team,
           lastGame: getLastGame(sec2Events, leaguePath),
-          upcomingGames: getUpcomingGames(sec2Events, 3, leaguePath),
+          upcomingGames: upcomingOnly(sec2Events, 3, leaguePath),
         }
       : null,
   ].filter(Boolean);

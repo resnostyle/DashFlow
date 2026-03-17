@@ -57,13 +57,14 @@ function buildNewsCardHtml(item) {
     </div>`;
 }
 
-function renderNewsSlider(newsItems) {
+function renderNewsSlider(newsItems, heading = 'News') {
     if (!newsItems?.length) return '';
     const items = newsItems.slice(0, 8);
     const firstCard = buildNewsCardHtml(items[0]);
     const secondCard = items.length > 1 ? buildNewsCardHtml(items[1]) : '';
     const multiClass = items.length > 1 ? ' sports-news-slider-multi' : '';
     return `<div class="sports-news-slider${multiClass}">
+        <div class="sports-news-slider-heading">${escapeHtml(heading)}</div>
         <div class="sports-news-slider-view sports-news-slider-left">${firstCard}</div>
         <div class="sports-news-slider-view sports-news-slider-right">${secondCard}</div>
     </div>`;
@@ -263,7 +264,8 @@ function renderPrimaryPage(primary, newsItems = [], espnNews = [], playerStats =
         : '';
 
     const mergedNews = (espnNews?.length ? espnNews : newsItems) || [];
-    const newsHtml = mergedNews.length ? renderNewsSlider(mergedNews) : '';
+    const newsHeading = espnNews?.length ? 'ESPN News' : 'News';
+    const newsHtml = mergedNews.length ? renderNewsSlider(mergedNews, newsHeading) : '';
     const playerStatsHtml = renderPlayerStatsSection(playerStats);
 
     const primaryTeamLogoSafe = team?.logo && (typeof safeUrl === 'function' ? safeUrl(team.logo) : null);
@@ -318,21 +320,22 @@ function renderPrimaryPage(primary, newsItems = [], espnNews = [], playerStats =
 function renderACCGames(games) {
     if (!games?.length) return '<p class="sports-empty">No ACC games today</p>';
     return games.map(g => {
-        const scoreOrStatus = g.completed
-            ? `${g.away?.score || '-'} - ${g.home?.score || '-'}`
-            : (g.statusShortDetail || g.status || 'Scheduled');
+        const showScore = g.completed || g.isLive;
+        const scoreOrStatus = showScore && (g.away?.score != null || g.home?.score != null)
+            ? `${g.away?.score ?? '-'} - ${g.home?.score ?? '-'}`
+            : (g.statusShortDetail ?? g.status ?? 'Scheduled');
         const awayLogoSafe = g.away?.logo && (typeof safeUrl === 'function' ? safeUrl(g.away.logo) : null);
         const homeLogoSafe = g.home?.logo && (typeof safeUrl === 'function' ? safeUrl(g.home.logo) : null);
         return `
         <div class="sports-acc-game">
             <span class="sports-acc-away">
                 ${awayLogoSafe ? `<img src="${escapeHtml(awayLogoSafe)}" alt="" class="sports-acc-game-logo" />` : ''}
-                ${escapeHtml(g.away?.shortName || 'TBD')}
+                ${escapeHtml(g.away?.shortName ?? 'TBD')}
             </span>
             <span class="sports-acc-score">${escapeHtml(scoreOrStatus)}</span>
             <span class="sports-acc-home">
                 ${homeLogoSafe ? `<img src="${escapeHtml(homeLogoSafe)}" alt="" class="sports-acc-game-logo" />` : ''}
-                ${escapeHtml(g.home?.shortName || 'TBD')}
+                ${escapeHtml(g.home?.shortName ?? 'TBD')}
             </span>
         </div>
     `;

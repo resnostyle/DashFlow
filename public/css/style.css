@@ -666,9 +666,7 @@ body {
     min-height: 200px;
 }
 
-.sports-news-slider::before {
-    content: 'ESPN News';
-    display: block;
+.sports-news-slider-heading {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-secondary);
@@ -692,7 +690,7 @@ body {
         gap: 1.25rem;
     }
 
-    .sports-news-slider-multi::before {
+    .sports-news-slider-multi .sports-news-slider-heading {
         grid-column: 1 / -1;
     }
 
