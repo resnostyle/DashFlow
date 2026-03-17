@@ -191,7 +191,7 @@ Response:
 
 Team IDs are configured per dashboard via `primaryTeamId` and `secondaryTeamIds` in config (default: 150, [153, 152]).
 
-Data is fetched from the ESPN public API and cached for 5 minutes. Sports dashboards are also refreshed automatically every 5 minutes and pushed to connected clients via WebSocket.
+Data is fetched from the ESPN public API and cached for 1 hour. Sports dashboards are also refreshed automatically every 5 minutes and pushed to connected clients via WebSocket.
 
 ### Feeds Management
 
@@ -791,7 +791,7 @@ Using mise is entirely optional; standard `npm` commands work the same way.
 
 - Verify the dashboard has `type: "sports"` and a valid `sport` (`"mens"` or `"womens"`)
 - Check server logs for ESPN API fetch errors
-- The ESPN API is public and rate-limited; data is cached for 5 minutes to reduce requests
+- The ESPN API is public and rate-limited; data is cached for 1 hour to reduce requests
 - Ensure the server has outbound HTTPS access to `site.api.espn.com`
 
 ## License
