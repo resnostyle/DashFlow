@@ -26,6 +26,15 @@ describe('Config API', () => {
       });
     });
 
+    it('returns refreshEnabled (default false) and refreshInterval (default 3600000)', async () => {
+      const res = await request(app)
+        .get('/api/config')
+        .query({ dashboard: 'default' });
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('refreshEnabled', false);
+      expect(res.body).toHaveProperty('refreshInterval', 3600000);
+    });
+
     it('returns default primaryTeamId and secondaryTeamIds for sports dashboard', async () => {
       const res = await request(app)
         .get('/api/config')
@@ -172,6 +181,32 @@ describe('Config API', () => {
         .send({ rotationInterval: 'abc' });
       expect(res.status).toBe(400);
     });
+
+    it('updates refreshEnabled and refreshInterval', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ refreshEnabled: true, refreshInterval: 1800000 });
+      expect(res.status).toBe(200);
+      expect(res.body.refreshEnabled).toBe(true);
+      expect(res.body.refreshInterval).toBe(1800000);
+
+      const getRes = await request(app)
+        .get('/api/config')
+        .query({ dashboard: 'default' });
+      expect(getRes.body.refreshEnabled).toBe(true);
+      expect(getRes.body.refreshInterval).toBe(1800000);
+    });
+
+    it('enforces minimum refreshInterval of 60000', async () => {
+      const res = await request(app)
+        .post('/api/config')
+        .query({ dashboard: 'default' })
+        .send({ refreshInterval: 30000 });
+      expect(res.status).toBe(200);
+      expect(res.body.refreshInterval).toBe(60000);
+    });
+
 
     it('returns 400 for invalid tickerEnabled value', async () => {
       const res = await request(app)

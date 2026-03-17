@@ -77,6 +77,12 @@ function initialize() {
   if (!configCols.includes('secondary_team_ids')) {
     db.exec('ALTER TABLE config ADD COLUMN secondary_team_ids TEXT');
   }
+  if (!configCols.includes('refresh_enabled')) {
+    db.exec('ALTER TABLE config ADD COLUMN refresh_enabled INTEGER DEFAULT 0');
+  }
+  if (!configCols.includes('refresh_interval')) {
+    db.exec('ALTER TABLE config ADD COLUMN refresh_interval INTEGER DEFAULT 3600000');
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -162,8 +168,8 @@ function migrateFromJSON() {
         'INSERT OR IGNORE INTO content (id, dashboard_id, url, title, type, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       ),
       config: db.prepare(
-        `INSERT OR IGNORE INTO config (dashboard_id, rotation_interval, ticker_refresh_interval, max_ticker_items, ticker_enabled, primary_team_id, secondary_team_ids)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT OR IGNORE INTO config (dashboard_id, rotation_interval, ticker_refresh_interval, max_ticker_items, ticker_enabled, primary_team_id, secondary_team_ids, refresh_enabled, refresh_interval)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ),
     };
 
@@ -232,6 +238,8 @@ function migrateFromJSON() {
         tickerEnabled: true,
         primaryTeamId: null,
         secondaryTeamIds: null,
+        refreshEnabled: false,
+        refreshInterval: 3600000,
       };
       let cfg = { ...defaults };
       const cfgPath = resolve('config.json');
@@ -256,6 +264,8 @@ function migrateFromJSON() {
         cfg.tickerEnabled !== false ? 1 : 0,
         primaryTeamId,
         secondaryTeamIds,
+        cfg.refreshEnabled === true ? 1 : 0,
+        cfg.refreshInterval ?? 3600000,
       );
     }
   });
@@ -487,7 +497,7 @@ function parseSecondaryTeamIds(val) {
 function getConfig(dashboardId) {
   const row = db
     .prepare(
-      'SELECT rotation_interval, ticker_refresh_interval, max_ticker_items, ticker_enabled, primary_team_id, secondary_team_ids FROM config WHERE dashboard_id = ?',
+      'SELECT rotation_interval, ticker_refresh_interval, max_ticker_items, ticker_enabled, primary_team_id, secondary_team_ids, refresh_enabled, refresh_interval FROM config WHERE dashboard_id = ?',
     )
     .get(dashboardId);
 
@@ -499,6 +509,8 @@ function getConfig(dashboardId) {
       tickerEnabled: true,
       primaryTeamId: DEFAULT_PRIMARY_TEAM_ID,
       secondaryTeamIds: DEFAULT_SECONDARY_TEAM_IDS,
+      refreshEnabled: false,
+      refreshInterval: 3600000,
     };
   }
 
@@ -509,6 +521,8 @@ function getConfig(dashboardId) {
     tickerEnabled: Boolean(row.ticker_enabled),
     primaryTeamId: row.primary_team_id != null ? Number(row.primary_team_id) : DEFAULT_PRIMARY_TEAM_ID,
     secondaryTeamIds: parseSecondaryTeamIds(row.secondary_team_ids),
+    refreshEnabled: Boolean(row.refresh_enabled),
+    refreshInterval: row.refresh_interval != null ? Number(row.refresh_interval) : 3600000,
   };
 }
 
@@ -552,9 +566,15 @@ function updateConfig(dashboardId, updates) {
     current.secondaryTeamIds = arr.slice(0, 2).map(Number).filter(n => !isNaN(n) && n > 0);
     if (current.secondaryTeamIds.length === 0) current.secondaryTeamIds = DEFAULT_SECONDARY_TEAM_IDS;
   }
+  if (updates.refreshEnabled !== undefined) {
+    current.refreshEnabled = Boolean(updates.refreshEnabled);
+  }
+  if (updates.refreshInterval !== undefined) {
+    current.refreshInterval = Math.max(60000, parseInt(updates.refreshInterval) || 3600000);
+  }
 
   db.prepare(
-    'UPDATE config SET rotation_interval = ?, ticker_refresh_interval = ?, max_ticker_items = ?, ticker_enabled = ?, primary_team_id = ?, secondary_team_ids = ? WHERE dashboard_id = ?',
+    'UPDATE config SET rotation_interval = ?, ticker_refresh_interval = ?, max_ticker_items = ?, ticker_enabled = ?, primary_team_id = ?, secondary_team_ids = ?, refresh_enabled = ?, refresh_interval = ? WHERE dashboard_id = ?',
   ).run(
     current.rotationInterval,
     current.tickerRefreshInterval,
@@ -562,6 +582,8 @@ function updateConfig(dashboardId, updates) {
     current.tickerEnabled ? 1 : 0,
     current.primaryTeamId,
     JSON.stringify(current.secondaryTeamIds),
+    current.refreshEnabled ? 1 : 0,
+    current.refreshInterval,
     dashboardId,
   );
 

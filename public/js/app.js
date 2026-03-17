@@ -22,14 +22,19 @@ if (new URLSearchParams(window.location.search).get('kiosk') === '1') {
     const manageLink = document.getElementById('manageLink');
     if (manageLink) manageLink.style.display = 'none';
 }
+
 let currentContentIndex = 0;
 let contentItems = [];
 let tickerItems = [];
 let dashboardMeta = { type: 'default', sport: null, name: '' };
 let config = {
     rotationInterval: 30000,
-    tickerEnabled: true
+    tickerEnabled: true,
+    refreshEnabled: false,
+    refreshInterval: 3600000
 };
+
+let autoRefreshTimer = null;
 
 let contentRotationInterval = null;
 let lastSportsData = null;
@@ -284,11 +289,24 @@ socket.on('content:rotate', () => {
 socket.on(`config:update:${dashboardId}`, (newConfig) => {
     config = newConfig;
     updateTicker(); // Update ticker visibility when config changes
+    startAutoRefresh();
     startContentRotation();
     if (dashboardMeta.type === 'sports' && lastSportsData && typeof renderSportsDashboard === 'function') {
         renderSportsDashboard(lastSportsData, dashboardMeta.sport, tickerItems, config.rotationInterval);
     }
 });
+
+function startAutoRefresh() {
+    if (autoRefreshTimer) {
+        clearTimeout(autoRefreshTimer);
+        autoRefreshTimer = null;
+    }
+    if (config.refreshEnabled && config.refreshInterval >= 60000) {
+        autoRefreshTimer = setTimeout(() => {
+            location.reload();
+        }, config.refreshInterval);
+    }
+}
 
 socket.on(`dashboard:meta:${dashboardId}`, (meta) => {
     dashboardMeta = meta;
