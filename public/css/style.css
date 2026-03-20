@@ -265,7 +265,7 @@ body {
 .sports-primary-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto auto;
     gap: 1rem 1.5rem;
     width: 100%;
     height: 100%;
@@ -318,6 +318,12 @@ body {
     margin-top: auto;
 }
 
+.sports-primary-grid .sports-player-stats-section {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    margin-top: 0.5rem;
+}
+
 .sports-primary-logo {
     width: 80px;
     height: 80px;
@@ -361,12 +367,52 @@ body {
     margin-right: 0.35rem;
 }
 
+.sports-primary-stat-sep {
+    color: var(--text-muted);
+    font-weight: 400;
+    margin: 0 0.25rem;
+    user-select: none;
+}
+
 .sports-primary-next-label {
     font-size: 0.75rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.35rem;
+}
+
+.sports-live-badge {
+    display: inline-block;
+    padding: 0.15em 0.5em;
+    background: #dc2626;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    animation: sports-live-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sports-live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+
+.sports-primary-next-scores {
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.sports-season-badge {
+    display: inline-block;
+    padding: 0.15em 0.5em;
+    background: var(--sports-team-primary, #00539b);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.65rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .sports-primary-next-date {
@@ -394,6 +440,23 @@ body {
 .sports-primary-next-broadcast {
     font-size: 0.95rem;
     color: var(--text-muted);
+}
+
+.sports-primary-next-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--sports-team-primary-light, var(--accent));
+    text-decoration: none;
+}
+
+.sports-primary-next-link:hover {
+    text-decoration: underline;
+}
+
+.sports-primary-next-live {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
 }
 
 .sports-primary-last {
@@ -595,52 +658,60 @@ body {
     color: var(--text-muted);
 }
 
-/* ---- Duke news slider ---- */
+/* ---- ESPN news slider (single rotating item, large for display) ---- */
 .sports-news-slider {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--border-default);
-    min-height: 140px;
-    overflow: hidden;
+    min-height: 200px;
 }
 
-.sports-news-slider::before {
-    content: 'News';
-    display: block;
-    font-size: 0.85rem;
+.sports-news-slider-heading {
+    font-size: 1.1rem;
+    font-weight: 600;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
-.sports-news-slider-track {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 1rem;
-    animation: sports-news-slide 40s linear infinite;
+.sports-news-slider-view {
+    width: 100%;
 }
 
-.sports-news-slider:hover .sports-news-slider-track {
-    animation-play-state: paused;
+.sports-news-slider-right {
+    display: none;
+}
+
+@media (min-width: 1100px) {
+    .sports-news-slider-multi {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+
+    .sports-news-slider-multi .sports-news-slider-heading {
+        grid-column: 1 / -1;
+    }
+
+    .sports-news-slider-multi .sports-news-slider-right {
+        display: block;
+    }
 }
 
 .sports-news-card {
-    flex: 0 0 320px;
-    min-width: 280px;
-    max-width: 380px;
-    min-height: 100px;
+    width: 100%;
+    min-height: 180px;
     display: flex;
     background: var(--bg-elevated);
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid var(--border-default);
     overflow: hidden;
 }
 
 .sports-news-card-media {
-    flex: 0 0 120px;
-    min-width: 120px;
+    flex: 0 0 220px;
+    min-width: 220px;
     background: var(--bg-primary);
     display: flex;
     align-items: stretch;
@@ -650,22 +721,22 @@ body {
 .sports-news-card-img {
     width: 100%;
     height: 100%;
-    min-height: 90px;
+    min-height: 160px;
     object-fit: cover;
 }
 
 .sports-news-card-body {
     flex: 1;
     min-width: 0;
-    padding: 0.75rem 1rem;
+    padding: 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.5rem;
 }
 
 .sports-news-card-title {
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--text-primary);
     line-height: 1.35;
     display: -webkit-box;
@@ -675,18 +746,105 @@ body {
 }
 
 .sports-news-card-snippet {
-    font-size: 0.85rem;
+    font-size: 1.15rem;
     color: var(--text-muted);
-    line-height: 1.3;
+    line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-@keyframes sports-news-slide {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+.sports-news-slider-view .sports-news-card {
+    animation: sports-news-fade-in 0.6s ease-out;
+}
+
+@keyframes sports-news-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ---- Player stats section (random player + MVP) ---- */
+.sports-player-stats-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-default);
+}
+
+.sports-player-card {
+    background: var(--bg-elevated);
+    border-radius: 10px;
+    border: 1px solid var(--border-default);
+    padding: 1.25rem 1.5rem;
+}
+
+.sports-player-card-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+}
+
+.sports-player-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sports-player-card-headshot {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.sports-player-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sports-player-card-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sports-player-card-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+.sports-player-card-stats {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--sports-team-primary-light, var(--accent));
+}
+
+.sports-player-card-shooting {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.sports-player-card-extra {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+@media (max-width: 700px) {
+    .sports-player-stats-section {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ---- ACC bottom row: standings + today side by side ---- */
@@ -725,8 +883,13 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.35rem 0.5rem;
-    background: var(--bg-elevated);
     border-radius: 4px;
+}
+
+.sports-standings-row-highlight {
+    font-weight: 600;
+    border-left: 3px solid var(--sports-team-primary, #00539b);
+    padding-left: calc(0.5rem - 3px);
 }
 
 .sports-standings-rank {
@@ -768,11 +931,25 @@ body {
 .sports-acc-away {
     flex: 1;
     text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
 }
 
 .sports-acc-home {
     flex: 1;
     text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sports-acc-game-logo {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .sports-acc-score {
@@ -799,7 +976,7 @@ body {
 @media (max-width: 700px) {
     .sports-primary-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto 1fr auto;
+        grid-template-rows: auto auto auto 1fr auto auto;
     }
     .sports-primary-hero {
         grid-column: 1;
@@ -818,6 +995,9 @@ body {
     .sports-primary-grid .sports-news-slider {
         grid-column: 1;
         grid-row: 5;
+    }
+    .sports-primary-grid .sports-player-stats-section {
+        grid-row: 6;
     }
 }
 
