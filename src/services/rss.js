@@ -11,6 +11,29 @@ const parser = new Parser({
   },
 });
 
+async function fetchFeedBody(url) {
+  const response = await fetch(url, {
+    redirect: 'follow',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+      Accept:
+        'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+    },
+  });
+  const contentType = response.headers.get('content-type') || '';
+  const text = await response.text();
+  return { response, contentType, text, finalUrl: response.url };
+}
+
+function looksLikeRssOrAtom(body) {
+  const s = body.trimStart().slice(0, 4000);
+  if (/^<\?xml/i.test(s)) return true;
+  if (/<rss[\s>/]/i.test(s)) return true;
+  if (/<feed[\s>/]/i.test(s)) return true;
+  if (/<rdf:RDF\b/i.test(s)) return true;
+  return false;
+}
+
 function extractImageUrl(item) {
   if (item.enclosure?.url && /^image\//i.test(item.enclosure.type || '')) {
     return item.enclosure.url;
@@ -130,7 +153,23 @@ async function fetchFeeds(dashboardId) {
       return [];
     }
     try {
-      const feedData = await parser.parseURL(feed.url);
+      const { response, contentType, text, finalUrl } = await fetchFeedBody(feed.url);
+      if (!response.ok) {
+        throw new Error(`Feed request failed: HTTP ${response.status} ${response.statusText}`);
+      }
+      if (!looksLikeRssOrAtom(text)) {
+        const ctLower = contentType.toLowerCase();
+        const docLower = text.trimStart().toLowerCase();
+        if (docLower.startsWith('<!doctype') || ctLower.includes('text/html')) {
+          throw new Error(
+            `Feed URL returned a web page instead of RSS/XML (final URL: ${finalUrl}). The link may be outdated or the feed moved.`,
+          );
+        }
+        throw new Error(
+          `Feed URL did not return RSS/Atom XML (Content-Type: ${contentType || 'unknown'}; final URL: ${finalUrl}).`,
+        );
+      }
+      const feedData = await parser.parseString(text);
       feedHealth[feed.id] = {
         lastSuccess: Date.now(),
         lastError: null,
