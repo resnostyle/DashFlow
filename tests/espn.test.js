@@ -117,6 +117,7 @@ describe('ESPN service', () => {
         const res = new EventEmitter();
         res.statusCode = 200;
         res.resume = vi.fn();
+        cb(res);
         process.nextTick(() => {
           res.emit('data', '<html>Not JSON</html>');
           res.emit('end');
