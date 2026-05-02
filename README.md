@@ -675,6 +675,8 @@ news-ticker/
 - `ADMIN_PASSWORD` - When set, protects `/admin` and all `/api/*` routes with session-based authentication. Users must log in at `/admin/login` before accessing the admin UI or API.
 - `ADMIN_SESSION_SECRET` - Secret for signing session cookies (required when `ADMIN_PASSWORD` is set in production; defaults to a dev-only value)
 - `CORS_ORIGIN` - Comma-separated list of allowed origins for CORS. If omitted or set to `*`, allows all origins. This limits which web origins can read API responses in browsers (it does not block server-to-server requests like curl or Postman). For proper API protection, use authentication and authorization in addition to CORS.
+- `RSS_FETCH_TIMEOUT_MS` - Wall-clock limit (milliseconds, minimum 1000) for each RSS feed fetch including redirects and response body (default: 15000). Docker Compose passes this through when set on the host.
+- `RSS_FETCH_MAX_REDIRECTS` - Maximum redirect hops when fetching a feed URL (default: 10, capped at 30). Each hop is validated for SSRF safety before following.
 
 ### Building Docker Image
 

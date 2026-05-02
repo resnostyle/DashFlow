@@ -11,6 +11,82 @@ const parser = new Parser({
   },
 });
 
+/** Wall-clock budget for fetch + all redirects (ms). Override with RSS_FETCH_TIMEOUT_MS. */
+const RSS_FETCH_TIMEOUT_MS = Math.max(1000, Number(process.env.RSS_FETCH_TIMEOUT_MS) || 15000);
+
+/** Max redirect hops after the initial request. Override with RSS_FETCH_MAX_REDIRECTS. */
+const RSS_FETCH_MAX_REDIRECTS = Math.min(30, Math.max(0, Number(process.env.RSS_FETCH_MAX_REDIRECTS) || 10));
+
+const RSS_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+async function fetchFeedBody(initialUrl) {
+  const deadline = Date.now() + RSS_FETCH_TIMEOUT_MS;
+  let url = initialUrl;
+
+  for (let redirectsFollowed = 0; ; redirectsFollowed += 1) {
+    const allowed = validateFetchUrl(url);
+    if (!allowed.valid) {
+      throw new Error(`RSS fetch blocked: ${allowed.error}`);
+    }
+
+    const msLeft = deadline - Date.now();
+    if (msLeft <= 0) {
+      throw new Error(`RSS fetch timed out after ${RSS_FETCH_TIMEOUT_MS}ms`);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), msLeft);
+
+    let response;
+    try {
+      response = await fetch(url, {
+        redirect: 'manual',
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+          Accept:
+            'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+        },
+      });
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        throw new Error(`RSS fetch timed out after ${RSS_FETCH_TIMEOUT_MS}ms`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (RSS_REDIRECT_STATUSES.has(response.status)) {
+      if (redirectsFollowed >= RSS_FETCH_MAX_REDIRECTS) {
+        throw new Error(`RSS fetch exceeded maximum redirects (${RSS_FETCH_MAX_REDIRECTS})`);
+      }
+      const loc = response.headers.get('Location');
+      if (!loc) {
+        throw new Error(`RSS redirect missing Location header (HTTP ${response.status})`);
+      }
+      url = new URL(loc, response.url || url).href;
+      continue;
+    }
+
+    const finalUrl = response.url || url;
+    const finalOk = validateFetchUrl(finalUrl);
+    if (!finalOk.valid) {
+      throw new Error(`RSS final URL blocked: ${finalOk.error}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const text = await response.text();
+    return { response, contentType, text, finalUrl };
+  }
+}
+
+/** True only when a feed root element appears in the prefix (not merely <?xml …>). */
+function looksLikeRssOrAtom(body) {
+  const s = body.trimStart().slice(0, 4000);
+  return /<(rss|feed|rdf:RDF)\b/i.test(s);
+}
+
 function extractImageUrl(item) {
   if (item.enclosure?.url && /^image\//i.test(item.enclosure.type || '')) {
     return item.enclosure.url;
@@ -130,7 +206,23 @@ async function fetchFeeds(dashboardId) {
       return [];
     }
     try {
-      const feedData = await parser.parseURL(feed.url);
+      const { response, contentType, text, finalUrl } = await fetchFeedBody(feed.url);
+      if (!response.ok) {
+        throw new Error(`Feed request failed: HTTP ${response.status} ${response.statusText}`);
+      }
+      if (!looksLikeRssOrAtom(text)) {
+        const ctLower = contentType.toLowerCase();
+        const docLower = text.trimStart().toLowerCase();
+        if (docLower.startsWith('<!doctype') || ctLower.includes('text/html')) {
+          throw new Error(
+            `Feed URL returned a web page instead of RSS/XML (final URL: ${finalUrl}). The link may be outdated or the feed moved.`,
+          );
+        }
+        throw new Error(
+          `Feed URL did not return RSS/Atom XML (Content-Type: ${contentType || 'unknown'}; final URL: ${finalUrl}).`,
+        );
+      }
+      const feedData = await parser.parseString(text);
       feedHealth[feed.id] = {
         lastSuccess: Date.now(),
         lastError: null,
@@ -216,4 +308,6 @@ module.exports = {
   stopRefreshLoop,
   restartRefreshLoop,
   scheduleDashboard,
+  looksLikeRssOrAtom,
+  fetchFeedBody,
 };

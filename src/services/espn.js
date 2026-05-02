@@ -13,6 +13,9 @@ const CACHE_TTL_LIVE_MS = 15 * 1000;
 const cache = {};
 const cacheExpiry = {};
 
+/** Outbound HTTPS timeout for ESPN API (matches tests / avoids hung sockets). */
+const REQUEST_TIMEOUT_MS = 10_000;
+
 function getLeaguePath(league) {
   const path =
     league === 'womens'
@@ -23,19 +26,40 @@ function getLeaguePath(league) {
 
 function fetch(url) {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, { headers: { Accept: 'application/json' } }, res => {
+    const req = https.get(
+      url,
+      {
+        headers: { Accept: 'application/json' },
+        timeout: REQUEST_TIMEOUT_MS,
+      },
+      res => {
+        const status = res.statusCode;
+        const ok = status >= 200 && status < 300;
+
+        if (!ok) {
+          res.resume();
+          reject(new Error(`ESPN API returned HTTP ${status}`));
+          return;
+        }
+
         let data = '';
         res.on('data', chunk => (data += chunk));
         res.on('end', () => {
           try {
             resolve(JSON.parse(data));
           } catch {
-            reject(new Error('Invalid JSON'));
+            reject(new Error(`ESPN API returned invalid JSON (HTTP ${status})`));
           }
         });
-      })
-      .on('error', reject);
+      },
+    );
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('ESPN API request timed out'));
+    });
+
+    req.on('error', reject);
   });
 }
 
